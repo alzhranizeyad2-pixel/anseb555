@@ -1,0 +1,10 @@
+services:
+  - type: web
+    name: anseb
+    runtime: node
+    buildCommand: "true"
+    startCommand: node backend/server.js
+    plan: free
+    envVars:
+      - key: ALLOWED_ORIGIN
+        value: "*"

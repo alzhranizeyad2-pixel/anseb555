@@ -1,0 +1,1 @@
+{"name":"anseb","version":"3.2.0","private":true,"main":"backend/server.js","scripts":{"start":"node backend/server.js","test":"node test/run.js && node test/logic.js && node test/sync.js && node test/old.js && node test/cartoon.js"},"engines":{"node":">=18"}}
