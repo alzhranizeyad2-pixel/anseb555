@@ -1,12 +1,10 @@
 'use strict';
-// Anseb v3.2 — إضافة Stremio: تجمع النسخ من Torrentio / Comet / StremThru وغيرها،
-// تطابق الترجمة العربية وتربطها بالنسخة مباشرة مع Auto-Sync كامل. بدون مكتبات خارجية — Node 18+.
 const http = require('http'), zlib = require('zlib'), crypto = require('crypto'), fs = require('fs'), path = require('path');
 const PORT = process.env.PORT || 3000;
 const ORIGIN = process.env.ALLOWED_ORIGIN || '*';
 const PUBLIC_URL = (process.env.PUBLIC_URL || '').replace(/\/+$/, '');
 const WEB = path.join(__dirname, '..', 'frontend');
-const UA = 'Anseb/3.2';
+const UA = 'Anseb/3.3';
 const DEBRID = ['realdebrid', 'alldebrid', 'premiumize', 'torbox', 'debridlink'];
 const DEFAULT_ADDONS = 'Torrentio|https://torrentio.strem.fun';
 const srcLabel = (n) => (/^torz$|stremthru/i.test(n) ? 'StremThru' : n);
@@ -21,7 +19,6 @@ const LANGS = {
   hi: { n: 'Hindi', iso3: 'hin', ss: 'hindi', flags: ['🇮🇳'], words: ['hindi', 'hin'], codes: ['hi', 'hin', 'hindi'] },
 };
 
-// ---------- أدوات عامة ----------
 const STOP = ['the', 'and', 'subtitles', 'sub', 'subs', 'eng', 'ara', 'ar', 'en', 'arabic', 'english', 'srt', 'mkv', 'mp4'];
 const norm = (s) => String(s || '').toLowerCase().replace(/[^a-z0-9\u0600-\u06ff+]+/g, ' ').trim();
 const toks = (s) => new Set(norm(s).split(' ').filter((t) => t.length > 1 && !STOP.includes(t)));
@@ -58,7 +55,7 @@ async function req(url, opt, ms) {
 const getJSON = async (url, headers, ms) => (await req(url, { headers }, ms)).json();
 async function getBuf(url, headers, ms) {
   const b = Buffer.from(await (await req(url, { headers }, ms || 15000)).arrayBuffer());
-  if (b.length > 8e6) throw new Error('الملف كبير');
+  if (b.length > 8e6) throw new Error('too big');
   return b;
 }
 
@@ -66,7 +63,6 @@ const cache = new Map();
 const remember = (k, v, max) => { cache.set(k, { t: Date.now(), v }); if (cache.size > (max || 600)) cache.delete(cache.keys().next().value); return v; };
 const recall = (k, ttl) => { const h = cache.get(k); return h && Date.now() - h.t < (ttl || 600000) ? h.v : null; };
 
-// ---------- تحليل أسماء النسخ ----------
 const PLAT_ID = 'nf|amzn|dsnp|hmax|max|atvp|hulu|pcok|pmtp|stan|crav|mubi|crit|sho|cr|funi|dcu|hbo';
 const PLAT_LONG = 'netflix|amazon|disney|appletv|peacock|paramount|hbomax|itunes';
 const PLAT_RE = new RegExp('\\b(' + PLAT_ID + '|' + PLAT_LONG + ')[ ._-]?web(?:[ ._-]?(?:dl|rip))?\\b|\\bweb(?:[ ._-]?(?:dl|rip))?[ ._-](' + PLAT_ID + ')\\b|\\b(nf|netflix|amzn|amazon|dsnp|disney|hmax|atvp|appletv|hulu|pcok|peacock|pmtp|paramount)\\b');
@@ -126,7 +122,6 @@ function pickRel(x) {
   return cleanRel(strip(pick));
 }
 
-// ---------- مطابقة الترجمة مع النسخة ----------
 const SRC_FAM = { remux: 'disc', bluray: 'disc', 'web-dl': 'web', webrip: 'web', hdtv: 'tv', dvd: 'dvd', cam: 'cam', '': '' };
 function srcSim(a, b) {
   if (!a || !b) return 0.5;
@@ -178,7 +173,6 @@ function rankSubs(a, subs) {
   return out.sort((p, q) => q.rank - p.rank);
 }
 
-// ---------- تحليل توقيت الترجمة ----------
 function parseSrt(text) {
   const st = [], en = [], re = /(?:(\d+):)?(\d{1,2}):(\d{2})[,.](\d{1,3})\s*-->\s*(?:(\d+):)?(\d{1,2}):(\d{2})[,.](\d{1,3})/g;
   const ms = (h, m, s_, f) => (((+h || 0) * 60 + +m) * 60 + +s_) * 1000 + +String(f).padEnd(3, '0');
@@ -255,34 +249,22 @@ const runtimeFit = (g, min) => { if (!min || !g) return 1; const d = g.last / (m
 const fmtT = (v) => { v = Math.max(0, Math.round(v)); const p = (n, l) => String(n).padStart(l, '0'); return `${p(Math.floor(v / 36e5), 2)}:${p(Math.floor(v / 6e4) % 60, 2)}:${p(Math.floor(v / 1e3) % 60, 2)},${p(v % 1e3, 3)}`; };
 const shiftSrt = (t, r, off) => t.replace(/(\d+):(\d{2}):(\d{2})[,.](\d{3})/g, (_, h, m, s_, f) => fmtT((((+h * 60 + +m) * 60 + +s_) * 1000 + +f) * r + off));
 
-// ═══════════════════════════════════════════════════════════════════
-// [AUTO-SYNC v2] — كشف وتصحيح التزامن ذاتيًا بدون ترجمة مرجعية
-// ═══════════════════════════════════════════════════════════════════
-
-// المستوى 1: مدة الفيلم — يقارن آخر ظهور بآخر الفيلم المتوقع
 function durationSync(g, meta) {
   if (!g || g.n < 20 || !meta || !meta.rt) return null;
   const rt = meta.rt * 60000;
   const tailGap = rt - g.last;
-  // الترجمة السليمة عادة تنتهي قبل نهاية الفيلم بـ 30-240 ثانية (كريدت)
-  if (tailGap >= 30000 && tailGap <= 240000) return null; // سليمة
+  if (tailGap >= 30000 && tailGap <= 240000) return null;
   let off = 0;
-  if (tailGap < 0) off = -tailGap - 60000;             // تنتهي بعد الفيلم = قدّم
-  else if (tailGap > 240000) off = -(tailGap - 120000); // تنتهي قبل بكثير = أخّر
-  // نتحقق إن الإزاحة معقولة
+  if (tailGap < 0) off = -tailGap - 60000;
+  else if (tailGap > 240000) off = -(tailGap - 120000);
   if (Math.abs(off) < 1500 || Math.abs(off) > 120000) return null;
-  // الإزاحة لا تكسر البداية
   if (g.first + off < -5000) return null;
   return { r: 1, off: Math.round(off), src: 'duration', confidence: Math.min(1, Math.abs(off) / 30000) };
 }
-
-// المستوى 2: المقدمة — يقارن أول 3 أسطر بمواقعها المتوقعة (5-120 ثانية عادة)
 function introSync(g, meta) {
   if (!g || g.n < 30) return null;
-  // الترجمة العربية عادة تبدأ بين 5 و 90 ثانية (نص المقدمة)
   if (g.first >= 3000 && g.first <= 90000) return null;
-  if (g.first < 2000) return null; // تبدأ من 0 = طبيعي
-  // تبدأ متأخرة جداً = قدّمها بمقدار المقدمة الزائدة
+  if (g.first < 2000) return null;
   if (g.first > 120000) {
     const off = -(g.first - 30000);
     if (Math.abs(off) > 120000) return null;
@@ -290,58 +272,34 @@ function introSync(g, meta) {
   }
   return null;
 }
-
-// المستوى 3: fps — يقارن آخر ظهور مع مدة الفيلم لاكتشاف فرق fps
 function fpsSync(g, meta) {
   if (!g || g.n < 50 || !meta || !meta.rt) return null;
   const rt = meta.rt * 60000;
   if (g.last <= 0) return null;
   const ratio = rt / g.last;
-  // نسب fps الشائعة (بهامش تسامح)
   const known = [25 / 23.976, 23.976 / 25, 24 / 23.976, 23.976 / 24, 25 / 24, 24 / 25, 30 / 29.97, 29.97 / 30];
   for (const k of known) {
     if (Math.abs(ratio - k) < 0.015) {
-      // الترجمة أسرع/أبطأ من الفيلم بهذه النسبة
       const r = k > 1 ? 1 / k : k;
-      // لو الترجمة تنتهي قبل الفيلم بكثير (r < 1 = تمدد) أو بعد (r > 1 = ضغط)
       const tailGap = rt - g.last;
-      if (Math.abs(tailGap) > 120000) {
-        return { r, off: 0, src: 'fps', confidence: Math.min(1, Math.abs(tailGap) / 300000) };
-      }
+      if (Math.abs(tailGap) > 120000) return { r, off: 0, src: 'fps', confidence: Math.min(1, Math.abs(tailGap) / 300000) };
     }
   }
   return null;
 }
-
-// [AUTO-SYNC] الدالة الرئيسية: تدمج كل المستويات وتختار أفضل تصحيح
 function selfSync(g, meta, allowFix) {
   if (!g || g.n < 20) return null;
   if (allowFix === false) return null;
-  const candidates = [
-    durationSync(g, meta),
-    introSync(g, meta),
-    fpsSync(g, meta),
-  ].filter(Boolean);
+  const candidates = [durationSync(g, meta), introSync(g, meta), fpsSync(g, meta)].filter(Boolean);
   if (!candidates.length) return null;
-  // نختار الأعلى ثقة
   candidates.sort((a, b) => (b.confidence || 0) - (a.confidence || 0));
   const best = candidates[0];
-  // لا نطبّق إلا لو الثقة معقولة
   if ((best.confidence || 0) < 0.3) return null;
-  // حدود أمان
   if (best.r < 0.9 || best.r > 1.1) return null;
   if (Math.abs(best.off) > 120000) return null;
   return best;
 }
 
-// [AUTO-SYNC] يدمج نتائج timingFit + selfSync — timingFit له الأولوية (أدق)
-function resolveSync(r, g, meta, allowFix) {
-  if (allowFix === false) return null;
-  if (r && r.fix) return r.fix;
-  return selfSync(g, meta, allowFix);
-}
-
-// ---------- ZIP + ترميز ----------
 function unzip(buf) {
   const out = []; let eocd = -1;
   for (let i = buf.length - 22; i >= Math.max(0, buf.length - 65557); i--) if (buf.readUInt32LE(i) === 0x06054b50) { eocd = i; break; }
@@ -400,7 +358,7 @@ function looksArabicText(text, minRatio) {
   const ar = (sample.match(/[\u0600-\u06FF]/g) || []).length;
   const lat = (sample.match(/[A-Za-z]/g) || []).length;
   if (ar + lat < 10) return true;
-  return ar / (ar + lat + 1) >= (minRatio == null ? 0.3 : minRatio);
+  return ar / (ar + lat + 1) >= (minRatio == null ? 0.25 : minRatio);
 }
 
 function contentStats(text) {
@@ -440,7 +398,6 @@ function safeFetchUrl(u) {
   } catch (e) { return null; }
 }
 
-// ---------- مصادر الترجمة ----------
 const looksRel = (s) => s && s.length > 8 && /\d{3,4}p|web|blu-?ray|hdtv|x26[45]|hevc|\b(19|20)\d{2}\b|s\d{1,2}e\d{1,3}/i.test(s);
 
 function pickSubs(ranked, n) {
@@ -475,11 +432,23 @@ async function addonSubs(list, type, id, lang) {
 }
 
 async function subsSubdl(key, imdb, s, e, lang, mk) {
-  const q = new URLSearchParams({ api_key: key, imdb_id: imdb, languages: lang.toUpperCase(), subs_per_page: '30', type: s ? 'tv' : 'movie' });
+  const iso = lang === 'ar' ? 'AR' : lang.toUpperCase();
+  const q = new URLSearchParams({ api_key: key, imdb_id: imdb, languages: iso, subs_per_page: '30', type: s ? 'tv' : 'movie' });
   if (s) { q.set('season_number', s); q.set('episode_number', e); }
   const d = await getJSON('https://api.subdl.com/api/v1/subtitles?' + q, {}, 9000);
   if (d.status === false) throw new Error(d.error || 'SubDL');
-  return (d.subtitles || []).filter((x) => x.url).map((x) => ({ prov: 'SubDL', rel: x.release_name || x.name || '', url: mk('subdl', String(x.url).replace(/^\//, ''), s, e), hi: !!x.hi, lang: LANGS[lang].n.toLowerCase() }));
+  return (d.subtitles || []).filter((x) => {
+    if (!x.url) return false;
+    const l = String(x.language || x.lang || '').toLowerCase().split(/[-_]/)[0];
+    if (l && !LANGS[lang].codes.includes(l)) return false;
+    return true;
+  }).map((x) => ({
+    prov: 'SubDL',
+    rel: x.release_name || x.name || '',
+    url: mk('subdl', String(x.url).replace(/^\//, ''), s, e),
+    hi: !!x.hi,
+    lang: LANGS[lang].n.toLowerCase()
+  }));
 }
 
 const ss = (key, p) => getJSON('https://api.subsource.net/api/v1' + p, { 'X-API-Key': key }, 9000);
@@ -491,9 +460,18 @@ async function subsSubsource(key, imdb, s, e, lang, mk) {
   if (!item) return [];
   const mid = item.movieId != null ? item.movieId : item.id;
   const rows = arr(await ss(key, '/subtitles?movieId=' + encodeURIComponent(mid) + '&language=' + LANGS[lang].ss + '&limit=100'));
-  return rows.map((x) => {
+  return rows.filter((x) => {
+    const l = String(x.language || x.lang || LANGS[lang].ss).toLowerCase();
+    return LANGS[lang].codes.includes(l.split(/[-_]/)[0]) || l === LANGS[lang].ss;
+  }).map((x) => {
     const id = x.subtitleId != null ? x.subtitleId : x.id, ri = x.releaseInfo || x.release_info || x.releaseName || x.release || '';
-    return id == null ? null : { prov: 'SubSource', rel: Array.isArray(ri) ? ri.join(' ') : String(ri), url: mk('subsource', String(id), s, e), hi: !!(x.hearingImpaired || x.hearing_impaired), lang: LANGS[lang].n.toLowerCase() };
+    return id == null ? null : {
+      prov: 'SubSource',
+      rel: Array.isArray(ri) ? ri.join(' ') : String(ri),
+      url: mk('subsource', String(id), s, e),
+      hi: !!(x.hearingImpaired || x.hearing_impaired),
+      lang: LANGS[lang].n.toLowerCase()
+    };
   }).filter(Boolean);
 }
 
@@ -512,7 +490,11 @@ async function subsOs(c, imdb, s, e, lang, mk, hash) {
   if (s) { q.set('parent_imdb_id', imdb.replace('tt', '')); q.set('season_number', s); q.set('episode_number', e); } else q.set('imdb_id', imdb.replace('tt', ''));
   if (hash) q.set('moviehash', hash);
   const d = await getJSON(a.url + '/subtitles?' + q, a.h, 9000);
-  return (d.data || []).map((x) => {
+  return (d.data || []).filter((x) => {
+    const t = x.attributes || {};
+    const l = String(t.language || '').toLowerCase().split(/[-_]/)[0];
+    return !l || LANGS[lang].codes.includes(l);
+  }).map((x) => {
     const t = x.attributes || {}, f = (t.files || [])[0] || {};
     return f.file_id ? { prov: 'OpenSubtitles', rel: t.release || f.file_name || '', url: mk('os', String(f.file_id), s, e), hi: !!t.hearing_impaired, machine: !!(t.machine_translated || t.ai_translated), trusted: !!t.from_trusted, dl: t.download_count || 0, hash: !!t.moviehash_match, lang: LANGS[lang].n.toLowerCase() } : null;
   }).filter(Boolean);
@@ -548,7 +530,7 @@ async function fetchSubFile(c, prov, ref, s, e) {
   else if (prov === 'os') {
     if (!/^\d+$/.test(ref) || !c.kOs) throw new Error('bad ref');
     const a = await osAuth(c), d = await (await req(a.url + '/download', { method: 'POST', headers: a.h, body: JSON.stringify({ file_id: +ref, sub_format: 'srt' }) }, 12000)).json();
-    if (!d.link) throw new Error(d.message || 'OpenSubtitles: لا يوجد رابط تنزيل');
+    if (!d.link) throw new Error(d.message || 'OpenSubtitles: no link');
     buf = await getBuf(d.link);
   } else if (prov === 'u') { const u = safeFetchUrl(ref); if (!u) throw new Error('bad ref'); buf = await getBuf(u); }
   else throw new Error('provider');
@@ -557,10 +539,10 @@ async function fetchSubFile(c, prov, ref, s, e) {
 
 function unpack(buf, c, s, e) {
   if (buf[0] === 0x1f && buf[1] === 0x8b) buf = zlib.gunzipSync(buf);
-  if (buf[0] === 0x50 && buf[1] === 0x4b) { const f = pickSub(unzip(buf), s, e, c.lang || 'ar'); if (!f) throw new Error('لا توجد ترجمة مطابقة داخل الأرشيف'); buf = f.data; }
+  if (buf[0] === 0x50 && buf[1] === 0x4b) { const f = pickSub(unzip(buf), s, e, c.lang || 'ar'); if (!f) throw new Error('no sub in archive'); buf = f.data; }
   const text = fixMojibake(decodeText(buf, c.lang || 'ar'));
-  if (!/-->/.test(text)) throw new Error('الملف ليس ترجمة صالحة');
-  if (c.lang === 'ar' && !looksArabicText(text)) throw new Error('الترجمة ليست بالعربية');
+  if (!/-->/.test(text)) throw new Error('not a subtitle');
+  if ((c.lang || 'ar') === 'ar' && !looksArabicText(text)) throw new Error('not arabic');
   return text;
 }
 
@@ -571,7 +553,9 @@ async function subText(c, x, s, e) {
 
 async function loadSig(c, x, s, e) {
   const k = 'sig' + sha(x.url), hit = recall(k, 18e5); if (hit) return hit;
-  const text = await subText(c, x, s, e), g = sigOf(parseSrt(text));
+  let text;
+  try { text = await subText(c, x, s, e); } catch (err) { return null; }
+  const g = sigOf(parseSrt(text));
   if (!g) return null;
   g.q = contentStats(text);
   g.arOk = looksArabicText(text);
@@ -581,7 +565,6 @@ async function loadSig(c, x, s, e) {
 const proxied = (ctx, url, s, e) => (url.startsWith(ctx.base + '/c/') ? url : `${ctx.base}/c/${ctx.tok}/sub/u/${b64u(url)}.srt${s ? `?s=${s}&e=${e}` : ''}`);
 const wOf = (r) => (r.pct == null ? 0.3 : r.pct / 100) + (r.x.trusted ? 0.2 : 0) + Math.log10(1 + (r.x.dl || 0)) / 10;
 
-// [AUTO-SYNC] يبني رابط مصحح
 function fixUrl(ctx, x, s, e, fix) {
   const px = proxied(ctx, x.url, s, e);
   const sep = px.includes('?') ? '&' : '?';
@@ -631,7 +614,6 @@ async function timingRank(c, groups, meta, ctx, s, e, poolGroups) {
   }
 }
 
-// [AUTO-SYNC] deepTiming: يطبّق selfSync على المرشح الأول لو ما فيه fix من المرجع
 async function deepTiming(c, list, o, meta, ctx, s, e) {
   const wide = list.map((v) => ({ subs: v.cands || v.subs }));
   await timingRank(c, wide, meta, ctx, s, e, wide.slice(0, 8));
@@ -639,7 +621,6 @@ async function deepTiming(c, list, o, meta, ctx, s, e) {
   for (const v of list) {
     const b = v.subs[0];
     v.sub = b ? { provider: b.x.prov, pct: b.pct, exact: b.exact, url: b.url || b.x.url, tm: b.tm || '' } : null;
-    // [AUTO-SYNC] لو الترجمة غير مؤكدة وغير مصححة، نجرّب selfSync
     if (b && !b.fix && b.tm !== 'junk' && b.tm !== 'ok' && c.fix !== false) {
       const g = recall('sig' + sha(b.x.url), 18e5);
       if (g) {
@@ -657,7 +638,6 @@ async function deepTiming(c, list, o, meta, ctx, s, e) {
   }
 }
 
-// ---------- الترتيب ----------
 const W = { res: { 2160: 40, 1080: 30, 720: 15, 480: 5, 0: 0 }, src: { remux: 25, bluray: 20, 'web-dl': 18, webrip: 12, hdtv: 8, cam: -200, dvd: 2, '': 0 }, aud: { Atmos: 20, TrueHD: 10, 'DTS-HD': 8, 'DD+': 6, DD: 3, AAC: 1, '': 0 }, hdr: { 'DV+HDR': 7, DV: 6, 'HDR10+': 6, HDR: 5, '': 0 }, cod: { av1: 2, hevc: 4, x264: 3, '': 0 } };
 function score(s, o, meta) {
   let v = W.res[s.res] + W.src[s.source] + W.aud[s.audio] + W.hdr[s.hdr] + W.cod[s.codec];
@@ -725,7 +705,6 @@ async function buildStreams(c, type, id, ctx, only) {
   return { streams: list, lang, meta, subsFound: subs.length, minPct: +c.minPct || 0 };
 }
 
-// ---------- شكل النتيجة داخل Stremio ----------
 const mark = (v) => (v >= 75 ? '✅' : '⚠️');
 function toStremio(r, ctx, type, s, e, c) {
   const L = LANGS[r.lang], m = r.meta || {};
@@ -737,8 +716,9 @@ function toStremio(r, ctx, type, s, e, c) {
     const k4 = v.res >= 2160 ? 'Yes ✅' : 'No ❌' + (v.res ? ' (' + v.res + 'p)' : '');
     let sub;
     if (v.emb === 'yes') sub = `${L.n} · مدمجة ✅`;
-    else if (v.sub) sub = `${L.n} · خارجية ` + (v.sub.exact ? '100% ✅' : v.sub.pct == null ? 'متوفرة ✅' : `${v.sub.pct}% ${mark(v.sub.pct)}`) + ({ ok: ' · ⏱ متزامنة', cons: ' · ⏱ توقيت مؤكَّد', fix: ' · ⏱ صُحّح تلقائياً 🔧', bad: ' · ⏱ توقيت مختلف ⚠️', junk: ' · ⚠️ محتوى مشكوك' }[v.sub.tm] || '') + ' · ' + v.sub.provider;
-    else sub = `${L.n} · ` + (v.emb === 'maybe' ? '➕ Multi subs (غير مؤكدة)' : '❌ غير متوفرة');
+    else if (v.sub && v.sub.provider) sub = `${L.n} · خارجية ` + (v.sub.exact ? '100% ✅' : v.sub.pct == null ? 'متوفرة ✅' : `${v.sub.pct}% ${mark(v.sub.pct)}`) + ({ ok: ' · ⏱ متزامنة', cons: ' · ⏱ توقيت مؤكَّد', fix: ' · ⏱ صُحّح تلقائياً 🔧', bad: ' · ⏱ توقيت مختلف ⚠️', junk: ' · ⚠️ محتوى مشكوك' }[v.sub.tm] || '') + ' · ' + v.sub.provider;
+    else if (v.emb === 'maybe') sub = `${L.n} · ➕ Multi subs (غير مؤكدة)`;
+    else sub = `${L.n} · ❌ غير متوفرة لهذه النسخة`;
     const info = [v.size ? '💾 ' + v.size.toFixed(1) + ' GB' : '', v.cached ? '⚡ Cached' : v.seeders ? '👤 ' + v.seeders : '', '📡 ' + v.addon].filter(Boolean).join('  ');
     const o = {
       name: 'Anseb - ' + v.addon + '\n' + (v.res >= 2160 ? '4K' : v.res ? v.res + 'p' : ' '),
@@ -747,15 +727,13 @@ function toStremio(r, ctx, type, s, e, c) {
     };
     const att = (v.emb === 'yes' ? v.subs.slice(0, 1) : v.subs).filter((q) =>
       q.tm !== 'junk' &&
-      (q.exact || q.pct == null || q.pct >= (r.minPct || 0)) &&
-      (q.x.lang === 'ar' || !q.x.lang || q.x.langOk !== false)
+      q.x &&
+      (q.x.lang === 'ar' || !q.x.lang || q.x.langOk !== false) &&
+      (q.exact || q.pct == null || q.pct >= (r.minPct || 0))
     );
-    // [AUTO-SYNC] نضمن إن الرابط المرفق هو المصحّح
     if (att.length) o.subtitles = att.map((q, n) => {
       let url = q.url || q.x.url;
-      if (q.fix && allowFix && !/\br=/.test(url)) {
-        url = fixUrl(ctx, q.x, s, e, q.fix);
-      }
+      if (q.fix && allowFix && !/\br=/.test(url)) url = fixUrl(ctx, q.x, s, e, q.fix);
       return { id: `anseb-${q.x.prov.toLowerCase().replace(/\W+/g, '-')}-${n}`, url, lang: L.iso3 };
     });
     if (v.url) o.url = v.url; else if (v.infoHash) { o.infoHash = v.infoHash; if (v.fileIdx != null) o.fileIdx = v.fileIdx; if (v.sources) o.sources = v.sources; } else return null;
@@ -764,7 +742,7 @@ function toStremio(r, ctx, type, s, e, c) {
 }
 const slug = (x) => String(x).toLowerCase().replace(/[^a-z0-9]+/g, '') || 'src';
 const manifest = (v) => {
-  const m = { id: 'org.anseb.addon', version: '3.2.0', name: 'Anseb ⭐', description: 'أنسب: يختار لك أنسب نسخة ويربطها بأنسب ترجمة عربية مع Auto-Sync كامل — إزاحة/fps/انحراف تُصحّح تلقائياً.', resources: ['stream', 'subtitles'], types: ['movie', 'series'], idPrefixes: ['tt'], catalogs: [], behaviorHints: { configurable: true, configurationRequired: false } };
+  const m = { id: 'org.anseb.addon', version: '3.3.0', name: 'Anseb ⭐', description: 'أنسب: يختار لك أنسب نسخة ويربطها بأنسب ترجمة عربية مع Auto-Sync كامل.', resources: ['stream', 'subtitles'], types: ['movie', 'series'], idPrefixes: ['tt'], catalogs: [], behaviorHints: { configurable: true, configurationRequired: false } };
   if (v && v.subsOnly) return Object.assign(m, { id: 'org.anseb.subtitles', name: 'Anseb - Subtitles', description: 'أنسب: ترجمات عربية مطابقة لاسم الملف الفعلي مع Auto-Sync.', resources: ['subtitles'] });
   if (v && v.src) return Object.assign(m, { id: 'org.anseb.' + slug(v.src.name) + (v.dup ? '-' + v.idx : ''), name: 'Anseb - ' + v.src.name, description: 'أنسب: نسخ ' + v.src.name + ' مع أنسب ترجمة عربية و Auto-Sync.', resources: ['stream'] });
   return m;
@@ -774,7 +752,6 @@ function decodeCfg(t) {
   try { if (!t) return {}; const raw = t[0] === '~' ? zlib.inflateRawSync(Buffer.from(t.slice(1), 'base64url')) : Buffer.from(t, 'base64url'); return JSON.parse(raw.toString('utf8')); } catch (e) { return {}; }
 }
 
-// ---------- الخادم ----------
 const MIME = { '.html': 'text/html; charset=utf-8', '.otf': 'font/otf', '.woff2': 'font/woff2', '.css': 'text/css', '.js': 'text/javascript', '.svg': 'image/svg+xml', '.png': 'image/png' };
 const SEC = { 'X-Content-Type-Options': 'nosniff', 'Referrer-Policy': 'no-referrer' };
 const send = (res, code, body, h) => { res.writeHead(code, Object.assign({ 'Access-Control-Allow-Origin': '*', 'Content-Type': 'application/json; charset=utf-8' }, h)); res.end(typeof body === 'string' ? body : JSON.stringify(body)); };
@@ -794,14 +771,14 @@ async function testKey(b) {
   const g = (k) => String(b[k] || '').trim();
   if (b.kind === 'subdl') {
     const d = await getJSON('https://api.subdl.com/api/v1/subtitles?' + new URLSearchParams({ api_key: g('key'), imdb_id: 'tt0111161', languages: 'EN', subs_per_page: '1', type: 'movie' }), {}, 9000);
-    if (d.status === false) throw new Error(d.error || 'مفتاح غير صالح');
+    if (d.status === false) throw new Error(d.error || 'bad key');
     return 'المفتاح يعمل';
   }
   if (b.kind === 'subsource') { await ss(g('key'), '/movies/search?searchType=imdb&imdb=tt0111161'); return 'المفتاح يعمل'; }
   if (b.kind === 'os') {
     const c = { kOs: g('key'), osUser: g('user'), osPass: g('pass') }, a = await osAuth(c);
     await getJSON(a.url + '/subtitles?imdb_id=111161&languages=en', a.h, 9000);
-    return c.osUser ? 'المفتاح وتسجيل الدخول يعملان (التنزيل مفعّل)' : 'المفتاح يعمل — أضف اسم المستخدم وكلمة المرور لتفعيل التنزيل';
+    return c.osUser ? 'المفتاح وتسجيل الدخول يعملان' : 'المفتاح يعمل — أضف اسم المستخدم وكلمة المرور لتفعيل التنزيل';
   }
   throw new Error('نوع غير معروف');
 }
@@ -825,10 +802,10 @@ async function handler(rq, res) {
 
   if (p === '/api/check') {
     const url = safeUrl(u.searchParams.get('url') || ''), h = { 'Access-Control-Allow-Origin': ORIGIN, 'Content-Type': 'application/json; charset=utf-8' };
-    if (!url) return send(res, 200, { ok: false, error: 'الرابط غير صالح (لازم https)' }, h);
+    if (!url) return send(res, 200, { ok: false, error: 'invalid url' }, h);
     const want = u.searchParams.get('kind') === 'subs' ? 'subtitles' : 'stream';
-    try { const d = await getJSON(url + '/manifest.json', {}, 8000), rs = (d.resources || []).map((x) => (x.name || x)); return send(res, 200, { ok: rs.includes(want), name: d.name, version: d.version, error: rs.includes(want) ? '' : want === 'stream' ? 'هذي الإضافة لا تقدّم نسخ (stream)' : 'هذي الإضافة لا تقدّم ترجمات (subtitles)' }, h); }
-    catch (e) { return send(res, 200, { ok: false, error: 'تعذّر قراءة الإضافة: ' + e.message }, h); }
+    try { const d = await getJSON(url + '/manifest.json', {}, 8000), rs = (d.resources || []).map((x) => (x.name || x)); return send(res, 200, { ok: rs.includes(want), name: d.name, version: d.version, error: rs.includes(want) ? '' : want === 'stream' ? 'no stream' : 'no subtitles' }, h); }
+    catch (e) { return send(res, 200, { ok: false, error: e.message }, h); }
   }
   if (p === '/api/test' && rq.method === 'POST') {
     const h = { 'Access-Control-Allow-Origin': ORIGIN, 'Content-Type': 'application/json; charset=utf-8' };
@@ -861,7 +838,7 @@ async function handler(rq, res) {
         const ranked = fn ? rankSubs(relInfo(fn), subs) : subs.map((x) => ({ x, pct: null }));
         const g = { subs: ranked.slice(0, 15) };
         if (fn && c.deep !== false && g.subs.length > 1) await timingRank(c, [g], await getMeta(type, imdb, s, e), ctx, s, e).catch(() => {});
-        out = { subtitles: g.subs.filter((q) => q.tm !== 'junk').map((q, n) => ({ id: `anseb-${q.x.prov.toLowerCase().replace(/\W+/g, '-')}-${n}` + (q.pct != null ? '-' + q.pct : ''), url: q.url || q.x.url, lang: LANGS[lang].iso3 })) };
+        out = { subtitles: g.subs.filter((q) => q.tm !== 'junk' && (q.x.lang === 'ar' || !q.x.lang || q.x.langOk !== false)).map((q, n) => ({ id: `anseb-${q.x.prov.toLowerCase().replace(/\W+/g, '-')}-${n}` + (q.pct != null ? '-' + q.pct : ''), url: q.url || q.x.url, lang: LANGS[lang].iso3 })) };
       }
     } catch (e) { out = kind === 'stream' ? { streams: [] } : { subtitles: [] }; }
     return send(res, 200, remember(key, out));
@@ -872,4 +849,4 @@ async function handler(rq, res) {
 if (require.main === module) {
   http.createServer((rq, rs) => handler(rq, rs).catch((e) => send(rs, 500, { error: e.message }))).listen(PORT, () => console.log('Anseb on ' + PORT));
 }
-module.exports = { durationSync, introSync, fpsSync, selfSync, resolveSync, fixUrl, histOffset, driftFit, contentStats, contentFactor, fixMojibake, rtlFix, pickRel, pickSubs, platOf, coreToks, timingRank, deepTiming, collectSubs, score, safeFetchUrl, parseSrt, sigOf, timingFit, shiftSrt, runtimeFit, relInfo, fit, rankSubs, unzip, pickSub, decodeText, embeddedSub, parse, buildStreams, toStremio, handler, decodeCfg, safeUrl, parseList, looksArabicText };
+module.exports = { durationSync, introSync, fpsSync, selfSync, fixUrl, histOffset, driftFit, contentStats, contentFactor, fixMojibake, rtlFix, pickRel, pickSubs, platOf, coreToks, timingRank, deepTiming, collectSubs, score, safeFetchUrl, parseSrt, sigOf, timingFit, shiftSrt, runtimeFit, relInfo, fit, rankSubs, unzip, pickSub, decodeText, embeddedSub, parse, buildStreams, toStremio, handler, decodeCfg, safeUrl, parseList, looksArabicText };
