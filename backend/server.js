@@ -4,7 +4,7 @@ const PORT = process.env.PORT || 3000;
 const ORIGIN = process.env.ALLOWED_ORIGIN || '*';
 const PUBLIC_URL = (process.env.PUBLIC_URL || '').replace(/\/+$/, '');
 const WEB = path.join(__dirname, '..', 'frontend');
-const UA = 'Anseb/3.3';
+const UA = 'Anseb/4.0';
 const DEBRID = ['realdebrid', 'alldebrid', 'premiumize', 'torbox', 'debridlink'];
 const DEFAULT_ADDONS = 'Torrentio|https://torrentio.strem.fun';
 const srcLabel = (n) => (/^torz$|stremthru/i.test(n) ? 'StremThru' : n);
@@ -322,15 +322,16 @@ function pickSub(files, s, e, lang) {
   const subs = files.filter((f) => /\.(srt|vtt)$/i.test(f.name) && !/__MACOSX/.test(f.name));
   if (!subs.length) return null;
   const biggest = (l) => l.reduce((a, b) => (b.data.length > a.data.length ? b : a));
+  const arSubs = subs.filter((f) => looksArabicText(Buffer.from(f.data).toString('utf8').slice(0, 6000), 0.4));
+  const pool = (lang === 'ar' && arSubs.length) ? arSubs : subs;
   if (s && e) {
     const S = +s, E = +e, re = new RegExp('s0?' + S + '[ ._-]?e0?' + E + '(?!\\d)|\\b0?' + S + 'x0?' + E + '\\b|\\b' + S + String(E).padStart(2, '0') + '\\b', 'i');
-    const hit = subs.filter((f) => re.test(f.name));
+    const hit = pool.filter((f) => re.test(f.name));
     if (hit.length) return biggest(hit);
-    if (subs.length === 1) return subs[0];
-    const arSubs = subs.filter((f) => looksArabicText(Buffer.from(f.data).toString('utf8').slice(0, 4000)));
-    return arSubs.length ? biggest(arSubs) : null;
+    if (pool.length === 1) return pool[0];
+    return arSubs.length ? biggest(arSubs) : (lang === 'ar' ? null : biggest(pool));
   }
-  return biggest(subs);
+  return biggest(pool);
 }
 
 function decodeText(buf, lang) {
@@ -424,9 +425,10 @@ async function addonSubs(list, type, id, lang) {
     const d = await getJSON(`${a.url}/subtitles/${type}/${encodeURIComponent(id)}.json`, {}, 7000);
     return (d.subtitles || []).filter((x) => {
       if (!x.url) return false;
-      const code = String(x.lang || '').toLowerCase().split(/[\s\-_\[(]/)[0];
-      return L.codes.includes(code);
-    }).map((x) => ({ prov: a.name, rel: relOfAddonSub(x), url: x.url, lang: L.n.toLowerCase() }));
+      const raw = String(x.lang || '').toLowerCase();
+      const parts = raw.split(/[\s\-_\[(]/);
+      return parts.some((p) => L.codes.includes(p));
+    }).map((x) => ({ prov: a.name, rel: relOfAddonSub(x), url: x.url, lang: L.n.toLowerCase(), declaredLang: String(x.lang || '').toLowerCase() }));
   }));
   return r.flatMap((x) => (x.status === 'fulfilled' ? x.value : []));
 }
@@ -440,6 +442,7 @@ async function subsSubdl(key, imdb, s, e, lang, mk) {
   return (d.subtitles || []).filter((x) => {
     if (!x.url) return false;
     const l = String(x.language || x.lang || '').toLowerCase().split(/[-_]/)[0];
+    if (lang === 'ar' && l && l !== 'ar' && l !== 'ara' && l !== 'arabic') return false;
     if (l && !LANGS[lang].codes.includes(l)) return false;
     return true;
   }).map((x) => ({
@@ -462,6 +465,7 @@ async function subsSubsource(key, imdb, s, e, lang, mk) {
   const rows = arr(await ss(key, '/subtitles?movieId=' + encodeURIComponent(mid) + '&language=' + LANGS[lang].ss + '&limit=100'));
   return rows.filter((x) => {
     const l = String(x.language || x.lang || LANGS[lang].ss).toLowerCase();
+    if (lang === 'ar') return l.split(/[-_]/)[0] === 'ar' || l === 'arabic';
     return LANGS[lang].codes.includes(l.split(/[-_]/)[0]) || l === LANGS[lang].ss;
   }).map((x) => {
     const id = x.subtitleId != null ? x.subtitleId : x.id, ri = x.releaseInfo || x.release_info || x.releaseName || x.release || '';
@@ -493,11 +497,33 @@ async function subsOs(c, imdb, s, e, lang, mk, hash) {
   return (d.data || []).filter((x) => {
     const t = x.attributes || {};
     const l = String(t.language || '').toLowerCase().split(/[-_]/)[0];
+    if (lang === 'ar') return l === 'ar' || l === 'ara' || l === 'arabic';
     return !l || LANGS[lang].codes.includes(l);
   }).map((x) => {
     const t = x.attributes || {}, f = (t.files || [])[0] || {};
     return f.file_id ? { prov: 'OpenSubtitles', rel: t.release || f.file_name || '', url: mk('os', String(f.file_id), s, e), hi: !!t.hearing_impaired, machine: !!(t.machine_translated || t.ai_translated), trusted: !!t.from_trusted, dl: t.download_count || 0, hash: !!t.moviehash_match, lang: LANGS[lang].n.toLowerCase() } : null;
   }).filter(Boolean);
+}
+
+async function verifyArabicBatch(c, subs, s, e) {
+  const batch = 12, out = [];
+  for (let i = 0; i < subs.length; i += batch) {
+    const chunk = subs.slice(i, i + batch);
+    const results = await Promise.allSettled(chunk.map(async (x) => {
+      try {
+        const text = await subText(c, x, s, e);
+        if (!looksArabicText(text, 0.4)) return null;
+        const q = contentStats(text);
+        if (q.ar < 0.5 && q.lat > 0.3) return null;
+        if (q.qm > 0.15) return null;
+        x.verified = true;
+        x.q = q;
+        return x;
+      } catch (err) { return null; }
+    }));
+    for (const r of results) if (r.status === 'fulfilled' && r.value) out.push(r.value);
+  }
+  return out;
 }
 
 async function collectSubs(c, type, imdb, s, e, lang, ctx, hash) {
@@ -519,6 +545,10 @@ async function collectSubs(c, type, imdb, s, e, lang, ctx, hash) {
     if (s) { const i = relInfo(x.rel); if ((i.s != null && i.s !== +s) || (i.e != null && i.e !== +e)) continue; x.info = i; }
     x.targetLang = lang;
     all.push(x);
+  }
+  if (lang === 'ar') {
+    const verified = await verifyArabicBatch(c, all, s, e);
+    return remember(ck, verified);
   }
   return remember(ck, all);
 }
@@ -542,7 +572,7 @@ function unpack(buf, c, s, e) {
   if (buf[0] === 0x50 && buf[1] === 0x4b) { const f = pickSub(unzip(buf), s, e, c.lang || 'ar'); if (!f) throw new Error('no sub in archive'); buf = f.data; }
   const text = fixMojibake(decodeText(buf, c.lang || 'ar'));
   if (!/-->/.test(text)) throw new Error('not a subtitle');
-  if ((c.lang || 'ar') === 'ar' && !looksArabicText(text)) throw new Error('not arabic');
+  if ((c.lang || 'ar') === 'ar' && !looksArabicText(text, 0.4)) throw new Error('not arabic');
   return text;
 }
 
@@ -573,14 +603,17 @@ function fixUrl(ctx, x, s, e, fix) {
 
 async function timingRank(c, groups, meta, ctx, s, e, poolGroups) {
   const lang = LANGS[c.lang] ? c.lang : 'ar', pool = new Map();
-  (poolGroups || groups).forEach((g) => g.subs.forEach((r) => { if (r.x.prov !== 'OpenSubtitles' && r.x.url && (!pool.has(r.x.url) || (pool.get(r.x.url).pct || 0) < (r.pct || 0))) pool.set(r.x.url, r); }));
+  (poolGroups || groups).forEach((g) => g.subs.forEach((r) => {
+    if (r.x.arOk === false && lang === 'ar') return;
+    if (r.x.prov !== 'OpenSubtitles' && r.x.url && (!pool.has(r.x.url) || (pool.get(r.x.url).pct || 0) < (r.pct || 0))) pool.set(r.x.url, r);
+  }));
   const sig = new Map();
   await Promise.race([Promise.allSettled([...pool.entries()].sort((p, q) => (q[1].pct || 0) - (p[1].pct || 0)).slice(0, 12).map(async ([u, r]) => { const g = await loadSig(c, r.x, s, e); if (g) sig.set(u, g); })), new Promise((ok) => setTimeout(ok, 7000))]);
   const pc = new Map(), tf = (ua, ub) => { const k = ua + '\n' + ub; if (!pc.has(k)) pc.set(k, timingFit(sig.get(ua), sig.get(ub))); return pc.get(k); };
   const canFix = c.fix !== false;
   for (const grp of groups) {
     const have = grp.subs.filter((r) => sig.has(r.x.url));
-    const arHave = have.filter((r) => sig.get(r.x.url).arOk !== false);
+    const arHave = have.filter((r) => sig.get(r.x.url).arOk !== false || lang !== 'ar');
     let anchor = arHave.find((r) => r.exact || r.pct >= 88), soft = null;
     if (!anchor && arHave.length >= 3) {
       let bs = -1;
@@ -593,7 +626,7 @@ async function timingRank(c, groups, meta, ctx, s, e, poolGroups) {
     const ref = anchor || soft;
     for (const r of have) {
       const g = sig.get(r.x.url), base = r.pct == null ? 50 : r.pct, rf = runtimeFit(g, meta && meta.rt), qf = contentFactor(g, lang, meta && meta.rt);
-      if (g.arOk === false) { r.tm = 'junk'; r.pct = Math.min(r.pct || 0, 10); r.url = r.x.url; continue; }
+      if (lang === 'ar' && g.arOk === false) { r.tm = 'junk'; r.pct = Math.min(r.pct || 0, 10); r.url = r.x.url; continue; }
       let st = '', pct = base;
       if (ref === r) { st = anchor ? 'ok' : 'cons'; if (soft) pct = Math.min(96, base + 8); }
       else if (ref) {
@@ -623,7 +656,7 @@ async function deepTiming(c, list, o, meta, ctx, s, e) {
     v.sub = b ? { provider: b.x.prov, pct: b.pct, exact: b.exact, url: b.url || b.x.url, tm: b.tm || '' } : null;
     if (b && !b.fix && b.tm !== 'junk' && b.tm !== 'ok' && c.fix !== false) {
       const g = recall('sig' + sha(b.x.url), 18e5);
-      if (g) {
+      if (g && g.arOk !== false && (c.lang || 'ar') === 'ar') {
         const ss = selfSync(g, meta, c.fix !== false);
         if (ss) {
           b.fix = ss;
@@ -728,7 +761,9 @@ function toStremio(r, ctx, type, s, e, c) {
     const att = (v.emb === 'yes' ? v.subs.slice(0, 1) : v.subs).filter((q) =>
       q.tm !== 'junk' &&
       q.x &&
-      (q.x.lang === 'ar' || !q.x.lang || q.x.langOk !== false) &&
+      (q.x.lang === 'ar' || q.x.langOk !== false) &&
+      q.x.arOk !== false &&
+      q.x.verified !== false &&
       (q.exact || q.pct == null || q.pct >= (r.minPct || 0))
     );
     if (att.length) o.subtitles = att.map((q, n) => {
@@ -742,7 +777,7 @@ function toStremio(r, ctx, type, s, e, c) {
 }
 const slug = (x) => String(x).toLowerCase().replace(/[^a-z0-9]+/g, '') || 'src';
 const manifest = (v) => {
-  const m = { id: 'org.anseb.addon', version: '3.3.0', name: 'Anseb ⭐', description: 'أنسب: يختار لك أنسب نسخة ويربطها بأنسب ترجمة عربية مع Auto-Sync كامل.', resources: ['stream', 'subtitles'], types: ['movie', 'series'], idPrefixes: ['tt'], catalogs: [], behaviorHints: { configurable: true, configurationRequired: false } };
+  const m = { id: 'org.anseb.addon', version: '4.0.0', name: 'Anseb ⭐', description: 'أنسب: يختار لك أنسب نسخة ويربطها بأنسب ترجمة عربية مع Auto-Sync كامل.', resources: ['stream', 'subtitles'], types: ['movie', 'series'], idPrefixes: ['tt'], catalogs: [], behaviorHints: { configurable: true, configurationRequired: false } };
   if (v && v.subsOnly) return Object.assign(m, { id: 'org.anseb.subtitles', name: 'Anseb - Subtitles', description: 'أنسب: ترجمات عربية مطابقة لاسم الملف الفعلي مع Auto-Sync.', resources: ['subtitles'] });
   if (v && v.src) return Object.assign(m, { id: 'org.anseb.' + slug(v.src.name) + (v.dup ? '-' + v.idx : ''), name: 'Anseb - ' + v.src.name, description: 'أنسب: نسخ ' + v.src.name + ' مع أنسب ترجمة عربية و Auto-Sync.', resources: ['stream'] });
   return m;
@@ -838,7 +873,7 @@ async function handler(rq, res) {
         const ranked = fn ? rankSubs(relInfo(fn), subs) : subs.map((x) => ({ x, pct: null }));
         const g = { subs: ranked.slice(0, 15) };
         if (fn && c.deep !== false && g.subs.length > 1) await timingRank(c, [g], await getMeta(type, imdb, s, e), ctx, s, e).catch(() => {});
-        out = { subtitles: g.subs.filter((q) => q.tm !== 'junk' && (q.x.lang === 'ar' || !q.x.lang || q.x.langOk !== false)).map((q, n) => ({ id: `anseb-${q.x.prov.toLowerCase().replace(/\W+/g, '-')}-${n}` + (q.pct != null ? '-' + q.pct : ''), url: q.url || q.x.url, lang: LANGS[lang].iso3 })) };
+        out = { subtitles: g.subs.filter((q) => q.tm !== 'junk' && (q.x.lang === 'ar' || q.x.langOk !== false) && q.x.arOk !== false && q.x.verified !== false).map((q, n) => ({ id: `anseb-${q.x.prov.toLowerCase().replace(/\W+/g, '-')}-${n}` + (q.pct != null ? '-' + q.pct : ''), url: q.url || q.x.url, lang: LANGS[lang].iso3 })) };
       }
     } catch (e) { out = kind === 'stream' ? { streams: [] } : { subtitles: [] }; }
     return send(res, 200, remember(key, out));
@@ -849,4 +884,4 @@ async function handler(rq, res) {
 if (require.main === module) {
   http.createServer((rq, rs) => handler(rq, rs).catch((e) => send(rs, 500, { error: e.message }))).listen(PORT, () => console.log('Anseb on ' + PORT));
 }
-module.exports = { durationSync, introSync, fpsSync, selfSync, fixUrl, histOffset, driftFit, contentStats, contentFactor, fixMojibake, rtlFix, pickRel, pickSubs, platOf, coreToks, timingRank, deepTiming, collectSubs, score, safeFetchUrl, parseSrt, sigOf, timingFit, shiftSrt, runtimeFit, relInfo, fit, rankSubs, unzip, pickSub, decodeText, embeddedSub, parse, buildStreams, toStremio, handler, decodeCfg, safeUrl, parseList, looksArabicText };
+module.exports = { durationSync, introSync, fpsSync, selfSync, fixUrl, histOffset, driftFit, contentStats, contentFactor, fixMojibake, rtlFix, pickRel, pickSubs, platOf, coreToks, timingRank, deepTiming, collectSubs, verifyArabicBatch, score, safeFetchUrl, parseSrt, sigOf, timingFit, shiftSrt, runtimeFit, relInfo, fit, rankSubs, unzip, pickSub, decodeText, embeddedSub, parse, buildStreams, toStremio, handler, decodeCfg, safeUrl, parseList, looksArabicText };
