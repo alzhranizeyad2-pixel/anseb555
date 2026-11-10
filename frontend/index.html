@@ -136,7 +136,7 @@ select option{background:var(--bg);color:var(--tx)}
 .src .nm i{width:2rem;height:2rem;border-radius:10px;display:grid;place-items:center;font-style:normal;font-size:.95rem;background:linear-gradient(135deg,var(--gold),var(--gold2));color:var(--onpri)}
 .src input[type=url]{margin-top:.6rem}
 .st{font-size:.82rem;font-weight:900;color:var(--mu);margin-top:.35rem;min-height:1.2em}
-.st.ok{color:var(--mint)}.st.bad{color:var(--red)}.st.warn{color:var(--gold)}
+.st.ok{color:var(--mint)}.st.bad{color:var(--red)}
 .keyrow{display:flex;gap:.5rem;align-items:center;margin-top:.6rem}
 .keyrow input{flex:1;min-width:0}
 details{margin-top:1rem}summary{cursor:pointer;font-weight:900;color:var(--gold)}
@@ -317,7 +317,7 @@ details{margin-top:1rem}summary{cursor:pointer;font-weight:900;color:var(--gold)
  <div class="steps rv">
   <div class="glass step" data-spot data-tilt><span class="no">١</span><h4>يجمع</h4><p>النسخ من Torrentio وComet وStremThru وMediaFusion والترجمات من SubDL وSubSource وOpenSubtitles.</p></div>
   <div class="glass step" data-spot data-tilt><span class="no">٢</span><h4>يطابق</h4><p>اسم النسخة والمنصة، بصمة التوقيت، إجماع الترجمات، ومدة الفيلم. ويفحص محتوى الترجمة نفسها: لغة وترميز.</p></div>
-  <div class="glass step" data-spot data-tilt><span class="no">٣</span><h4>يربط ويصحّح</h4><p>يرفق أفضل ترجمة بالنسخة، ويضبط توقيت كل الترجمات تلقائياً: الإزاحة وفرق الـ fps وانحراف السرعة.</p></div>
+  <div class="glass step" data-spot data-tilt><span class="no">٣</span><h4>يربط ويصحّح</h4><p>يرفق أفضل ترجمة بالنسخة، ويصحّح الإزاحة وفرق الـ fps وانحراف السرعة قبل التسليم.</p></div>
  </div>
 </section>
 
@@ -421,8 +421,7 @@ details{margin-top:1rem}summary{cursor:pointer;font-weight:900;color:var(--gold)
  <header class="ph rv"><span class="pn">٥</span><div><h2>دقة التطابق</h2><p>اسم الملف، ثم توقيت الأسطر نفسه، ثم مدة الفيلم، كلها معاً.</p></div></header>
  <div class="glass card rv" data-spot>
   <label class="check"><input type="checkbox" id="deep"> تحليل التوقيت العميق (ينزّل أفضل المرشحين ويقارن أزمنتهم)</label>
-  <label class="check"><input type="checkbox" id="fix"> مزامنة تلقائية لكل الترجمات: تصحيح الإزاحة وفرق الـ fps وانحراف السرعة قبل التسليم</label>
-  <label class="check"><input type="checkbox" id="osDeep"> شمل ترجمات OpenSubtitles.com بالتحليل والمزامنة (يستهلك من حصة التنزيل)</label>
+  <label class="check"><input type="checkbox" id="fix"> مزامنة تلقائية: تصحيح فرق الـ fps أو الإزاحة عند اكتشافه</label>
   <label class="check"><input type="checkbox" id="rtl"> إصلاح اتجاه النص العربي (الشرطات وعلامات الترقيم في أول السطر)</label>
   <div class="lbl">أقل نسبة تطابق لربط الترجمة تلقائياً</div>
   <select id="minPct" class="chsel"><option value="0">بدون حد — اربط أفضل ترجمة دائماً</option><option value="50">50% — متساهل</option><option value="70">70% — متوازن</option><option value="85">85% — صارم جداً</option></select>
@@ -471,10 +470,10 @@ details{margin-top:1rem}summary{cursor:pointer;font-weight:900;color:var(--gold)
 <script>
 (function(){
 var $=function(i){return document.getElementById(i)};
-var DEF={lang:'ar',dev:'auto',atmos:true,mode:'p2p',svc:'realdebrid',dkey:'',cachedOnly:true,useTorrentio:true,torrentioUrl:'',comet:'',torz:'',addons:'',osv3:true,osh:true,oshUrl:'https://opensubtitles.stremio.homes/ar/ai-translated=false%7Cfrom=all%7Cauto-adjustment=true',mediafusion:'',rtl:true,osDeep:false,deep:true,fix:true,minPct:'0',kSubdl:'',kSubsource:'',kOs:'',osUser:'',osPass:'',subsExtra:''};
+var DEF={lang:'ar',dev:'auto',atmos:true,mode:'p2p',svc:'realdebrid',dkey:'',cachedOnly:true,useTorrentio:true,torrentioUrl:'',comet:'',torz:'',addons:'',osv3:true,osh:true,oshUrl:'https://opensubtitles.stremio.homes/ar/ai-translated=false%7Cfrom=all%7Cauto-adjustment=true',mediafusion:'',rtl:true,deep:true,fix:true,minPct:'0',kSubdl:'',kSubsource:'',kOs:'',osUser:'',osPass:'',subsExtra:''};
 var SVC=[['realdebrid','Real-Debrid','real-debrid.com/apitoken'],['alldebrid','AllDebrid','alldebrid.com/apikeys'],['premiumize','Premiumize','premiumize.me/account'],['torbox','TorBox','torbox.app/settings'],['debridlink','Debrid-Link','debrid-link.com/webapp/apikey']];
 var LN={ar:'Arabic'};
-var FIELDS=['lang','dev','mode','svc','dkey','torrentioUrl','comet','torz','mediafusion','oshUrl','addons','kSubdl','kSubsource','kOs','osUser','osPass','subsExtra','minPct'],CHECKS=['atmos','useTorrentio','cachedOnly','osv3','osh','rtl','osDeep','deep','fix'],URLS=['torrentioUrl','comet','torz','mediafusion','oshUrl'];
+var FIELDS=['lang','dev','mode','svc','dkey','torrentioUrl','comet','torz','mediafusion','oshUrl','addons','kSubdl','kSubsource','kOs','osUser','osPass','subsExtra','minPct'],CHECKS=['atmos','useTorrentio','cachedOnly','osv3','osh','rtl','deep','fix'],URLS=['torrentioUrl','comet','torz','mediafusion','oshUrl'];
 var S=load();
 function load(){var o;try{o=Object.assign({},DEF,JSON.parse(localStorage.getItem('anseb2')||'{}'))}catch(e){o=Object.assign({},DEF)}o.lang='ar';return o}
 function save(){try{localStorage.setItem('anseb2',JSON.stringify(S))}catch(e){}}
@@ -513,13 +512,10 @@ function prev(){$('prevDs').textContent='🏆 Dune: Part Two (2024) · WEB-DL ·
 // ----- تحقق من روابط المصادر ومفاتيح الترجمة -----
 function setSt(id,cls,txt){var e=$('st-'+id);e.className='st '+cls;e.textContent=txt}
 var chkT={};
-function chkReq(v,id,n){return fetch('/api/check?url='+encodeURIComponent(v)+(id==='oshUrl'?'&kind=subs':'')).then(function(r){return r.json()}).catch(function(e){if(n<2)return new Promise(function(ok){setTimeout(ok,2500)}).then(function(){return chkReq(v,id,n+1)});throw e})}
 function chk(id){clearTimeout(chkT[id]);var v=normUrl($(id).value);if(!v){setSt(id,'','');return}
  setSt(id,'','جاري الفحص…');
- chkT[id]=setTimeout(function(){chkReq(v,id,0).then(function(d){
-  if(d.ok)setSt(id,'ok','✓ '+(d.name||'إضافة')+' '+(d.version||''));
-  else if(d.soft)setSt(id,'warn','⚠️ '+d.error);
-  else setSt(id,'bad','✕ '+d.error)}).catch(function(){setSt(id,'warn','⚠️ تعذّر الاتصال بخادم الفحص (قد يكون الخادم يستيقظ). افتح الصفحة من رابط الخدمة وأعد المحاولة، والرابط يُحفظ ويعمل')})},400)}
+ chkT[id]=setTimeout(function(){fetch('/api/check?url='+encodeURIComponent(v)+(id==='oshUrl'?'&kind=subs':'')).then(function(r){return r.json()}).then(function(d){
+  setSt(id,d.ok?'ok':'bad',d.ok?'✓ '+(d.name||'إضافة')+' '+(d.version||''):'✕ '+d.error)}).catch(function(){setSt(id,'bad','✕ تعذّر الفحص')})},400)}
 document.querySelectorAll('[data-test]').forEach(function(b){b.onclick=function(){
  collect();var k=b.dataset.test,body={kind:k,key:k==='subdl'?S.kSubdl:k==='subsource'?S.kSubsource:S.kOs,user:S.osUser,pass:S.osPass};
  if(!body.key){setSt(k,'bad','✕ أدخل المفتاح أولاً');return}
@@ -541,7 +537,7 @@ async function enc(json){
 async function dec(t){
  try{var raw;if(t[0]==='~')raw=await new Response(new Blob([ub64(t.slice(1))]).stream().pipeThrough(new DecompressionStream('deflate-raw'))).text();else raw=new TextDecoder().decode(ub64(t));return JSON.parse(raw)}catch(e){return null}}
 function apply(c){
- S.lang='ar';S.rtl=c.rtl!==false;S.osDeep=c.osDeep===true;S.atmos=!!c.atmos;S.cachedOnly=c.cachedOnly!==false;S.osv3=c.osv3!==false;S.deep=c.deep!==false;S.fix=c.fix!==false;S.minPct=String(c.minPct||0);
+ S.lang='ar';S.rtl=c.rtl!==false;S.atmos=!!c.atmos;S.cachedOnly=c.cachedOnly!==false;S.osv3=c.osv3!==false;S.deep=c.deep!==false;S.fix=c.fix!==false;S.minPct=String(c.minPct||0);
  S.dev=c.noHdr?'4knohdr':({2160:'4k',1080:'1080',720:'720'}[c.maxRes]||'auto');
  S.mode=c.debrid?'debrid':'p2p';if(c.debrid)S.svc=c.debrid;S.dkey=c.debridKey||'';
  S.kSubdl=c.kSubdl||'';S.kSubsource=c.kSubsource||'';S.kOs=c.kOs||'';S.osUser=c.osUser||'';S.osPass=c.osPass||'';S.osh=false;var sx=[];lines(c.subs).forEach(function(l){var i=l.indexOf('|');if(i>0&&l.slice(0,i)==='OpenSubtitles Homes'){S.osh=true;S.oshUrl=normUrl(l.slice(i+1))}else sx.push(l)});S.subsExtra=sx.join('\n');
@@ -558,14 +554,14 @@ async function doGen(){
  if(S.mode==='debrid'&&!S.dkey)return off('أدخل مفتاح API لخدمة الديبرد، أو اختر P2P.');
  if(!L.addons)return off('فعّل مصدر نسخ واحداً على الأقل.');
  w.textContent='';
- var c={v:2,lang:S.lang,atmos:S.atmos,maxRes:maxRes(),noHdr:S.dev==='4knohdr',addons:L.addons,subs:L.subs,osv3:S.osv3,rtl:S.rtl,osDeep:S.osDeep,kSubdl:S.kSubdl,kSubsource:S.kSubsource,kOs:S.kOs,osUser:S.osUser,osPass:S.osPass,debrid:S.mode==='debrid'?S.svc:'',debridKey:S.mode==='debrid'?S.dkey:'',cachedOnly:S.cachedOnly,deep:S.deep,fix:S.fix,minPct:+S.minPct||0};
+ var c={v:2,lang:S.lang,atmos:S.atmos,maxRes:maxRes(),noHdr:S.dev==='4knohdr',addons:L.addons,subs:L.subs,osv3:S.osv3,rtl:S.rtl,kSubdl:S.kSubdl,kSubsource:S.kSubsource,kOs:S.kOs,osUser:S.osUser,osPass:S.osPass,debrid:S.mode==='debrid'?S.svc:'',debridKey:S.mode==='debrid'?S.dkey:'',cachedOnly:S.cachedOnly,deep:S.deep,fix:S.fix,minPct:+S.minPct||0};
  var tk=await enc(JSON.stringify(c)),u=location.origin+'/c/'+tk+'/manifest.json';
  $('link').value=u;go.href='stremio://'+u.replace(/^https?:\/\//,'');web.href='https://web.stremio.com/#/addons?addon='+encodeURIComponent(u);
  go.removeAttribute('aria-disabled');web.removeAttribute('aria-disabled');
  splitUI(L.names,location.origin+'/c/'+tk);status()}
 function splitUI(names,base){
  var box=$('splitList');box.textContent='';$('splitCard').hidden=false;
- names.map(function(n,i){return['Anseb - '+n,base+'/a/'+i+'/manifest.json']}).concat([['Anseb - Subtitles (اختياري، مزامنة تلقائية لكل ترجمة)',base+'/subs/manifest.json']]).forEach(function(r){
+ names.map(function(n,i){return['Anseb - '+n,base+'/a/'+i+'/manifest.json']}).concat([['Anseb - Subtitles (اختياري)',base+'/subs/manifest.json']]).forEach(function(r){
   var row=document.createElement('div');row.className='split';
   var b=document.createElement('b');b.textContent=r[0];
   var act=document.createElement('div');act.className='actions';act.style.marginTop='0';
