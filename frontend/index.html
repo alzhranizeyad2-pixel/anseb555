@@ -1,659 +1,464 @@
 <!doctype html>
-<html lang="ar" dir="rtl">
+<html lang="en">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<script>(function(){try{var m=localStorage.getItem('anseb-theme')||'system',d=m==='system'?(matchMedia('(prefers-color-scheme:light)').matches?'light':'dark'):m;document.documentElement.dataset.theme=d}catch(e){}})()</script>
-<title>أنسب — لوحة الإعدادات</title>
-<meta name="description" content="أنسب: إضافة Stremio تختار أنسب نسخة وتربطها بأنسب ترجمة.">
-<link rel="icon" type="image/png" href="https://dima.tools/emoji_to_png/i/lzYAWqvmps9_256.png">
+<title>Stremify — Stremio Addon Generator</title>
 <style>
-@font-face{font-family:Thmanyah;src:url(/fonts/thmanyahsans-Regular.otf) format("opentype");font-weight:400}
-@font-face{font-family:Thmanyah;src:url(/fonts/thmanyahsans-Black.otf) format("opentype");font-weight:900}
-@font-face{font-family:ThmanyahSerif;src:url(/fonts/thmanyahserifdisplay-Bold.otf) format("opentype");font-weight:700}
-@font-face{font-family:ThmanyahSerif;src:url(/fonts/thmanyahserifdisplay-Black.otf) format("opentype");font-weight:900}
-:root{--bg:#070d15;--glass:rgba(19,32,45,.66);--glass2:rgba(30,48,66,.55);--sf2:rgba(34,54,74,.7);--line:rgba(130,170,200,.16);--line2:rgba(130,170,200,.32);--tx:#eef3f6;--mu:#93a8b8;--gold:#f4b942;--gold2:#ffd98a;--onpri:#1a1200;--mint:#62d4a8;--red:#ff7a66;--pv:#050a10;--inp:rgba(6,12,19,.6);--b1:rgba(244,185,66,.16);--b2:rgba(98,212,168,.12);--b3:rgba(90,140,255,.12);--sh:0 10px 40px rgba(0,0,0,.35);--r:20px;color-scheme:dark}
-:root[data-theme=light]{--bg:#eef3f8;--glass:rgba(255,255,255,.78);--glass2:rgba(255,255,255,.6);--sf2:rgba(226,236,245,.9);--line:rgba(40,80,110,.13);--line2:rgba(40,80,110,.28);--tx:#12212d;--mu:#55697a;--gold:#b97a00;--gold2:#e0a01c;--onpri:#fff;--mint:#0d8a63;--red:#c4402c;--pv:#f7fafc;--inp:rgba(255,255,255,.9);--b1:rgba(244,185,66,.26);--b2:rgba(98,212,168,.2);--b3:rgba(90,140,255,.16);--sh:0 10px 36px rgba(30,60,90,.12);color-scheme:light}
-*{box-sizing:border-box}
-html{font-size:16px;scroll-behavior:smooth}
-body{margin:0;background:var(--bg);color:var(--tx);font-family:Thmanyah,"Segoe UI",Tahoma,sans-serif;line-height:1.65;min-height:100vh;overflow-x:hidden;transition:background-color .3s,color .3s}
-h1,h2,h3{font-family:ThmanyahSerif,Thmanyah,serif;font-weight:900;margin:0;line-height:1.25}
-button,input,select,textarea{font:inherit;color:inherit}
-:focus-visible{outline:3px solid var(--gold);outline-offset:3px}
-[hidden]{display:none!important}
-.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
-.emo{width:1.25em;height:1.25em;vertical-align:-.25em;display:inline-block;object-fit:contain}
+  :root{
+    --bg:#0a0a0a;--surface:#111111;--surface2:#1a1a1a;
+    --border:#2a2a2a;--border2:#3a3a3a;
+    --text:#f5f5f5;--muted:#8a8a8a;
+    --white:#ffffff;--black:#000000;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0;height:100%}
+  body{
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    background:var(--bg);color:var(--text);line-height:1.6;
+    -webkit-font-smoothing:antialiased;
+  }
+  .wrap{max-width:780px;margin:0 auto;padding:40px 20px 80px}
+  header{text-align:center;margin-bottom:40px}
+  h1{margin:0;font-size:clamp(2rem,5vw,2.8rem);font-weight:800;letter-spacing:-.03em;color:var(--white)}
+  h1 .dot{color:var(--muted)}
+  .sub{color:var(--muted);margin-top:8px;font-size:.95rem}
 
-/* خلفية متحركة */
-.bgfx{position:fixed;inset:0;z-index:-1;overflow:hidden;pointer-events:none}
-.bgfx i{position:absolute;border-radius:50%;filter:blur(70px);opacity:.9;animation:float 18s ease-in-out infinite}
-.bgfx i:nth-child(1){width:34rem;height:34rem;background:var(--b1);top:-10rem;inset-inline-end:-8rem}
-.bgfx i:nth-child(2){width:30rem;height:30rem;background:var(--b2);bottom:-12rem;inset-inline-start:-8rem;animation-delay:-6s}
-.bgfx i:nth-child(3){width:24rem;height:24rem;background:var(--b3);top:40%;inset-inline-start:35%;animation-delay:-11s}
-.bgfx::after{content:"";position:absolute;inset:0;background-image:linear-gradient(var(--line) 1px,transparent 1px),linear-gradient(90deg,var(--line) 1px,transparent 1px);background-size:56px 56px;opacity:.35;-webkit-mask-image:radial-gradient(70% 60% at 50% 30%,#000,transparent);mask-image:radial-gradient(70% 60% at 50% 30%,#000,transparent)}
-@keyframes float{0%,100%{transform:translate(0,0) scale(1)}50%{transform:translate(40px,-30px) scale(1.12)}}
+  .card{
+    background:var(--surface);border:1px solid var(--border);
+    border-radius:14px;padding:24px;margin-bottom:16px;
+    transition:border-color .2s;
+  }
+  .card:hover{border-color:var(--border2)}
+  .card h2{
+    margin:0 0 4px;font-size:1.05rem;font-weight:700;
+    color:var(--white);letter-spacing:-.01em;
+    display:flex;align-items:center;gap:10px;
+  }
+  .card h2 .num{
+    display:inline-flex;align-items:center;justify-content:center;
+    width:26px;height:26px;border-radius:50%;
+    background:var(--white);color:var(--black);
+    font-size:.8rem;font-weight:800;
+  }
+  .card .hint{color:var(--muted);font-size:.85rem;margin:0 0 18px}
 
-/* شاشة الترحيب */
-.splash{position:fixed;inset:0;z-index:100;display:grid;place-items:center;text-align:center;background:radial-gradient(60rem 36rem at 50% 40%,color-mix(in srgb,var(--gold) 16%,transparent),transparent),var(--bg);transition:opacity .7s,transform .7s,visibility .7s;cursor:pointer;padding:1.5rem}
-.splash.out{opacity:0;visibility:hidden;transform:scale(1.05)}
-.sp-in{display:grid;gap:.9rem;justify-items:center}
-.sp-star{width:7rem;height:7rem;animation:pop 1s cubic-bezier(.2,1.4,.3,1) both,bob 3.4s 1s ease-in-out infinite;filter:drop-shadow(0 10px 30px color-mix(in srgb,var(--gold) 55%,transparent))}
-.sp-h{font-size:clamp(3rem,13vw,7rem);line-height:1.1;background:linear-gradient(100deg,var(--tx) 20%,var(--gold) 45%,var(--tx) 70%);background-size:220% 100%;-webkit-background-clip:text;background-clip:text;color:transparent;animation:blurin 1s .25s both,shine 3.5s 1.2s linear infinite}
-.sp-wave{display:inline-block;font-size:.55em;transform-origin:70% 70%;animation:wave 1.8s .9s ease-in-out infinite}
-.sp-p{color:var(--mu);font-size:1.15rem;margin:0;animation:rise .8s .6s both}
-.sp-btn{margin-top:.6rem;animation:rise .8s .9s both}
-.sp-bar{width:11rem;height:4px;border-radius:9px;background:var(--line);overflow:hidden;animation:rise .8s .7s both}
-.sp-bar i{display:block;height:100%;width:0;background:linear-gradient(90deg,var(--gold),var(--mint));animation:fill 2.6s .3s ease-out forwards}
-@keyframes pop{from{transform:scale(0) rotate(-120deg);opacity:0}to{transform:none;opacity:1}}
-@keyframes bob{50%{transform:translateY(-10px) rotate(6deg)}}
-@keyframes blurin{from{opacity:0;filter:blur(18px);transform:scale(.8)}to{opacity:1;filter:none;transform:none}}
-@keyframes shine{to{background-position:-220% 0}}
-@keyframes wave{0%,60%,100%{transform:rotate(0)}10%,30%{transform:rotate(16deg)}20%,40%{transform:rotate(-10deg)}50%{transform:rotate(8deg)}}
-@keyframes rise{from{opacity:0;transform:translateY(18px)}to{opacity:1;transform:none}}
-@keyframes fill{to{width:100%}}
+  .addon-list{display:flex;flex-direction:column;gap:10px}
+  .addon{
+    background:var(--surface2);border:1px solid var(--border);
+    border-radius:12px;padding:14px 16px;transition:border-color .2s;
+  }
+  .addon:hover{border-color:var(--border2)}
+  .addon .top{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+  .addon .name{font-weight:700;font-size:.95rem;color:var(--white)}
+  .addon .desc{color:var(--muted);font-size:.78rem;margin-top:2px}
+  .addon .link{
+    display:inline-flex;align-items:center;gap:6px;
+    padding:6px 12px;border-radius:8px;
+    background:transparent;border:1px solid var(--border2);
+    color:var(--muted);text-decoration:none;font-size:.78rem;
+    font-weight:600;transition:.15s;white-space:nowrap;
+  }
+  .addon .link:hover{color:var(--white);border-color:var(--white)}
+  .addon .link::after{content:"↗"}
+  .addon input[type=text]{
+    width:100%;margin-top:10px;padding:10px 12px;
+    background:var(--bg);border:1px solid var(--border);border-radius:8px;
+    color:var(--text);font-family:ui-monospace,"SF Mono",Consolas,monospace;
+    font-size:.82rem;direction:ltr;text-align:left;
+    transition:border-color .15s, box-shadow .15s;
+  }
+  .addon input[type=text]:focus{outline:none;border-color:var(--white);box-shadow:0 0 0 3px rgba(255,255,255,.08)}
+  .addon input[type=text]::placeholder{color:#555}
 
-/* الشريط العلوي */
-.top{position:sticky;top:0;z-index:30;backdrop-filter:blur(16px) saturate(1.4);-webkit-backdrop-filter:blur(16px) saturate(1.4);background:color-mix(in srgb,var(--bg) 72%,transparent);border-bottom:1px solid var(--line);padding-top:env(safe-area-inset-top)}
-.top .in{max-width:1240px;margin:0 auto;padding:.6rem 1.2rem;display:flex;align-items:center;justify-content:space-between;gap:1rem}
-.brand{display:flex;align-items:center;gap:.6rem;font-family:ThmanyahSerif;font-weight:900;font-size:1.7rem;line-height:1}
-.brand .emo{width:1.5rem;height:1.5rem}
-.brand small{font-family:Thmanyah;font-weight:400;font-size:.75rem;color:var(--mu);border:1px solid var(--line2);border-radius:99px;padding:.05rem .5rem}
-.seg{display:inline-flex;background:var(--sf2);border:1px solid var(--line);border-radius:999px;padding:3px;gap:2px}
-.seg button{background:none;border:0;border-radius:999px;padding:.32rem .8rem;cursor:pointer;font-weight:900;font-size:.82rem;color:var(--mu);display:inline-flex;align-items:center;gap:.4rem;transition:.2s}
-.seg button:hover{color:var(--tx)}
-.seg button[aria-pressed=true]{background:var(--gold);color:var(--onpri);box-shadow:0 4px 14px color-mix(in srgb,var(--gold) 40%,transparent)}
-.seg .emo{width:1.15rem;height:1.15rem}
-@media(max-width:560px){.seg button span{display:none}.seg button{padding:.38rem .6rem}}
+  .custom-block{margin-top:16px}
+  .custom-block label{display:block;font-weight:600;font-size:.85rem;margin-bottom:8px;color:var(--white)}
+  textarea{
+    width:100%;min-height:90px;padding:12px 14px;
+    background:var(--bg);border:1px solid var(--border);border-radius:10px;
+    color:var(--text);font-family:ui-monospace,"SF Mono",Consolas,monospace;
+    font-size:.82rem;direction:ltr;text-align:left;resize:vertical;
+    transition:border-color .15s, box-shadow .15s;
+  }
+  textarea:focus{outline:none;border-color:var(--white);box-shadow:0 0 0 3px rgba(255,255,255,.08)}
+  textarea::placeholder{color:#555}
 
-/* الهيكل */
-.shell{max-width:1240px;margin:0 auto;padding:1.2rem 1.2rem 7rem;display:grid;grid-template-columns:16.5rem minmax(0,1fr);gap:1.4rem;align-items:start}
-.side{position:sticky;top:4.6rem;display:grid;gap:.9rem}
-.stage{min-width:0}
-.glass{position:relative;background:var(--glass);border:1px solid var(--line);border-radius:var(--r);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);box-shadow:var(--sh);overflow:hidden;transition:border-color .25s,transform .25s}
-.glass::before{content:"";position:absolute;inset:0;pointer-events:none;background:radial-gradient(16rem circle at var(--mx,50%) var(--my,0%),color-mix(in srgb,var(--gold) 14%,transparent),transparent 60%);opacity:0;transition:opacity .3s}
-.glass:hover::before{opacity:1}
-.glass:hover{border-color:color-mix(in srgb,var(--gold) 40%,var(--line))}
-.me{padding:1rem 1.1rem;display:grid;gap:.5rem}
-.me .hi{display:flex;align-items:center;gap:.6rem;font-family:ThmanyahSerif;font-weight:900;font-size:1.35rem}
-.me .hi .emo{width:2rem;height:2rem;animation:bob 3.4s ease-in-out infinite}
-.me p{margin:0;color:var(--mu);font-size:.85rem}
-.bar{height:7px;background:var(--line);border-radius:9px;overflow:hidden}
-.bar i{display:block;height:100%;width:0;border-radius:9px;background:linear-gradient(90deg,var(--gold),var(--mint));transition:width .7s cubic-bezier(.2,.8,.2,1)}
-.nav{display:grid;gap:.3rem;padding:.5rem}
-.nav button{display:flex;align-items:center;gap:.7rem;background:none;border:0;border-radius:14px;padding:.6rem .8rem;cursor:pointer;text-align:start;font-weight:900;color:var(--mu);position:relative;transition:.2s}
-.nav button:hover{background:var(--sf2);color:var(--tx);transform:translateX(-3px)}
-.nav button .ic{width:2.1rem;height:2.1rem;border-radius:11px;display:grid;place-items:center;background:var(--sf2);font-size:1.05rem;transition:.2s;flex:none}
-.nav button .ck{margin-inline-start:auto;width:1.25rem;height:1.25rem;border-radius:50%;border:2px solid var(--line2);display:grid;place-items:center;font-size:.7rem;color:transparent;transition:.3s;flex:none}
-.nav button.done .ck{background:var(--mint);border-color:var(--mint);color:#04261a}
-.nav button[aria-current=page]{background:linear-gradient(135deg,color-mix(in srgb,var(--gold) 22%,transparent),color-mix(in srgb,var(--gold) 6%,transparent));color:var(--tx);box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--gold) 45%,transparent)}
-.nav button[aria-current=page] .ic{background:var(--gold);color:var(--onpri)}
-@media(max-width:900px){
- .shell{grid-template-columns:minmax(0,1fr);padding-bottom:8rem}
- .side{position:sticky;top:3.6rem;z-index:25;margin:0 -1.2rem}
- .me{display:none}
- .nav{display:flex;overflow-x:auto;border-radius:0;border-inline:0;padding:.45rem 1.2rem;scrollbar-width:none;background:color-mix(in srgb,var(--bg) 80%,transparent)}
- .nav::-webkit-scrollbar{display:none}
- .nav button{flex:none;padding:.4rem .7rem .4rem .9rem}.nav button .ck{display:none}.nav button .ic{width:1.8rem;height:1.8rem}
- .nav button:hover{transform:none}
-}
+  .field-label{display:block;font-weight:600;font-size:.85rem;margin-bottom:8px;color:var(--white)}
 
-/* اللوحات */
-.panel{display:none}.panel.on{display:block}
-.panel.on .rv{animation:rise .65s cubic-bezier(.2,.8,.2,1) both;animation-delay:calc(var(--i,0)*70ms)}
-.ph{display:flex;gap:1rem;align-items:center;margin:.2rem 0 1.1rem}
-.ph .pn{width:3rem;height:3rem;border-radius:16px;display:grid;place-items:center;font-family:ThmanyahSerif;font-weight:900;font-size:1.4rem;background:linear-gradient(135deg,var(--gold),var(--gold2));color:var(--onpri);box-shadow:0 8px 24px color-mix(in srgb,var(--gold) 35%,transparent);flex:none}
-.ph h2{font-size:clamp(1.4rem,3.4vw,2rem)}
-.ph p{margin:.1rem 0 0;color:var(--mu)}
-.card{padding:1.2rem 1.3rem;margin-bottom:1rem}
-.card h3{font-size:1.1rem;margin-bottom:.2rem}
-.sub{color:var(--mu);font-size:.9rem;margin:0 0 .6rem}
-.lbl,label{display:block;margin:.9rem 0 .35rem;font-weight:900;font-size:.95rem}
-input,select,textarea{width:100%;background:var(--inp);border:1px solid var(--line);border-radius:13px;padding:.6rem .85rem;transition:border-color .2s,box-shadow .2s}
-input:focus,select:focus,textarea:focus{border-color:var(--gold);box-shadow:0 0 0 4px color-mix(in srgb,var(--gold) 18%,transparent);outline:0}
-input[type=password],input[type=url],input[type=text]{direction:ltr;text-align:start}
-textarea{min-height:4.5rem;direction:ltr}
-select{appearance:none;-webkit-appearance:none;background-image:linear-gradient(45deg,transparent 50%,var(--mu) 50%),linear-gradient(135deg,var(--mu) 50%,transparent 50%);background-position:calc(0% + 1.1rem) 55%,calc(0% + 1.45rem) 55%;background-size:6px 6px;background-repeat:no-repeat;padding-inline-start:2.4rem;cursor:pointer}
-select option{background:var(--bg);color:var(--tx)}
-.check{display:flex;gap:.7rem;align-items:center;font-weight:400;margin:.8rem 0 0;cursor:pointer}
-.check input{appearance:none;-webkit-appearance:none;width:2.6rem;height:1.45rem;padding:0;border-radius:99px;background:var(--line2);border:0;position:relative;flex:none;cursor:pointer;transition:.25s}
-.check input::after{content:"";position:absolute;top:3px;inset-inline-start:3px;width:1.05rem;height:1.05rem;border-radius:50%;background:#fff;transition:.25s;box-shadow:0 2px 6px rgba(0,0,0,.3)}
-.check input:checked{background:var(--mint)}
-.check input:checked::after{inset-inline-start:calc(100% - 1.05rem - 3px)}
-.row2{display:grid;grid-template-columns:1fr 1fr;gap:.9rem}
-@media(max-width:620px){.row2{grid-template-columns:1fr}}
-.note{color:var(--mu);font-size:.85rem}
-.btn{background:var(--sf2);border:1px solid var(--line2);border-radius:999px;padding:.55rem 1.2rem;cursor:pointer;display:inline-flex;gap:.5rem;align-items:center;justify-content:center;font-weight:900;text-decoration:none;color:var(--tx);transition:.2s;position:relative;overflow:hidden}
-.btn:hover{transform:translateY(-2px);border-color:var(--gold)}
-.btn.pri{background:linear-gradient(135deg,var(--gold),var(--gold2));color:var(--onpri);border-color:transparent;box-shadow:0 8px 24px color-mix(in srgb,var(--gold) 35%,transparent)}
-.btn.pri:hover{box-shadow:0 12px 32px color-mix(in srgb,var(--gold) 50%,transparent)}
-.btn.sm{padding:.3rem .85rem;font-size:.85rem}
-.btn.lg{padding:.8rem 1.8rem;font-size:1.05rem}
-.btn[aria-disabled=true]{opacity:.45;pointer-events:none}
-.src{border:1px solid var(--line);border-radius:16px;padding:.95rem 1rem;margin-top:.9rem;background:var(--glass2);transition:.2s}
-.src:hover{border-color:var(--line2)}
-.src .top2{display:flex;align-items:center;justify-content:space-between;gap:.6rem;flex-wrap:wrap}
-.src .nm{display:flex;align-items:center;gap:.6rem;font-family:ThmanyahSerif;font-weight:900;font-size:1.1rem}
-.src .nm i{width:2rem;height:2rem;border-radius:10px;display:grid;place-items:center;font-style:normal;font-size:.95rem;background:linear-gradient(135deg,var(--gold),var(--gold2));color:var(--onpri)}
-.src input[type=url]{margin-top:.6rem}
-.st{font-size:.82rem;font-weight:900;color:var(--mu);margin-top:.35rem;min-height:1.2em}
-.st.ok{color:var(--mint)}.st.bad{color:var(--red)}
-.keyrow{display:flex;gap:.5rem;align-items:center;margin-top:.6rem}
-.keyrow input{flex:1;min-width:0}
-details{margin-top:1rem}summary{cursor:pointer;font-weight:900;color:var(--gold)}
-.tip{border-inline-start:4px solid var(--gold);padding:.3rem .9rem;margin-top:.9rem;font-size:.88rem;color:var(--mu);background:color-mix(in srgb,var(--gold) 6%,transparent);border-radius:0 12px 12px 0}
-.hint{display:grid;grid-template-columns:auto 1fr;gap:.3rem .8rem;font-size:.86rem;color:var(--mu);margin:.8rem 0 0}.hint b{color:var(--tx)}
-.warn{color:var(--red);font-weight:900;font-size:.9rem;min-height:1.3em;margin-top:.6rem}
-.actions{display:flex;gap:.6rem;flex-wrap:wrap;margin-top:.8rem}
-.link{direction:ltr;text-align:start;font-size:.8rem}
-.split{display:flex;align-items:center;justify-content:space-between;gap:.6rem;flex-wrap:wrap;border:1px solid var(--line);border-radius:14px;padding:.6rem .9rem;margin-top:.6rem;background:var(--glass2)}
-.split b{font-family:ThmanyahSerif;direction:ltr}
-.prev{background:var(--pv);border:1px solid var(--line);border-radius:16px;padding:1rem 1.1rem;direction:ltr;text-align:left;display:grid;grid-template-columns:4.4rem 1fr;gap:.9rem;font-size:.88rem;line-height:1.6}
-.prev .nm{font-weight:900;color:var(--gold);white-space:pre-line}
-.prev .ds{white-space:pre-line;word-break:break-word}
+  .dd{position:relative;user-select:none}
+  .dd-btn{
+    width:100%;display:flex;align-items:center;gap:12px;
+    padding:11px 40px 11px 14px;background:var(--bg);
+    border:1px solid var(--border);border-radius:10px;
+    color:var(--text);font-size:.92rem;font-family:inherit;
+    cursor:pointer;transition:border-color .15s, box-shadow .15s;
+    text-align:left;
+  }
+  .dd-btn:focus{outline:none;border-color:var(--white);box-shadow:0 0 0 3px rgba(255,255,255,.08)}
+  .dd-btn:hover{border-color:var(--border2)}
+  .dd.open .dd-btn{border-color:var(--white);box-shadow:0 0 0 3px rgba(255,255,255,.08)}
+  .dd-btn img{width:22px;height:22px;object-fit:contain;flex:none;border-radius:4px}
+  .dd-btn .label{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .dd-btn::after{
+    content:"";position:absolute;top:50%;right:16px;
+    width:8px;height:8px;border-right:2px solid var(--muted);
+    border-bottom:2px solid var(--muted);
+    transform:translateY(-70%) rotate(45deg);
+    transition:transform .2s, border-color .2s;pointer-events:none;
+  }
+  .dd.open .dd-btn::after{transform:translateY(-30%) rotate(-135deg);border-color:var(--white)}
 
-/* بطاقات الاختيار */
-.choices{display:grid;grid-template-columns:repeat(auto-fit,minmax(9rem,1fr));gap:.6rem}
-.ch{background:var(--glass2);border:1px solid var(--line);border-radius:15px;padding:.7rem .9rem;cursor:pointer;text-align:start;transition:.2s;display:grid;gap:.1rem;position:relative}
-.ch b{font-family:ThmanyahSerif;font-size:.98rem}
-.ch span{color:var(--mu);font-size:.8rem;line-height:1.45}
-.ch:hover{transform:translateY(-3px);border-color:var(--line2)}
-.ch[aria-checked=true]{border-color:var(--gold);background:linear-gradient(135deg,color-mix(in srgb,var(--gold) 20%,transparent),color-mix(in srgb,var(--gold) 4%,transparent));box-shadow:0 8px 24px color-mix(in srgb,var(--gold) 18%,transparent)}
-.ch[aria-checked=true]::after{content:"✓";position:absolute;top:.5rem;inset-inline-end:.7rem;font-weight:900;color:var(--gold)}
-.chsel{display:none}
+  .dd-menu{
+    position:absolute;top:calc(100% + 6px);left:0;right:0;
+    background:var(--surface2);border:1px solid var(--border2);
+    border-radius:10px;padding:6px;max-height:280px;overflow-y:auto;
+    box-shadow:0 12px 40px rgba(0,0,0,.6);z-index:50;display:none;
+    animation:ddOpen .15s ease-out;
+  }
+  .dd.open .dd-menu{display:block}
+  @keyframes ddOpen{from{opacity:0;transform:translateY(-4px)}to{opacity:1;transform:none}}
+  .dd-item{
+    display:flex;align-items:center;gap:12px;
+    padding:9px 12px;border-radius:7px;cursor:pointer;
+    font-size:.9rem;color:var(--text);transition:background .12s;
+  }
+  .dd-item:hover{background:rgba(255,255,255,.06)}
+  .dd-item.on{background:var(--white);color:var(--black);font-weight:700}
+  .dd-item img{width:22px;height:22px;object-fit:contain;flex:none;border-radius:4px}
+  .dd-menu::-webkit-scrollbar{width:6px}
+  .dd-menu::-webkit-scrollbar-track{background:transparent}
+  .dd-menu::-webkit-scrollbar-thumb{background:var(--border2);border-radius:3px}
 
-/* حقل اللغة مع العلم */
-.langf{position:relative}
-.langf .emo{position:absolute;inset-inline-start:.85rem;top:50%;transform:translateY(-50%);width:1.5rem;height:1.5rem;pointer-events:none;z-index:1}
-.langf select{padding-inline-start:3.1rem;padding-inline-end:1rem;background-image:none;font-weight:900}
+  input[type=password]{
+    width:100%;padding:11px 14px;background:var(--bg);
+    border:1px solid var(--border);border-radius:10px;
+    color:var(--text);font-family:ui-monospace,"SF Mono",Consolas,monospace;
+    font-size:.85rem;direction:ltr;text-align:left;
+    transition:border-color .15s, box-shadow .15s;
+  }
+  input[type=password]:focus{outline:none;border-color:var(--white);box-shadow:0 0 0 3px rgba(255,255,255,.08)}
+  input::placeholder{color:#555}
 
-/* الرئيسية */
-.hero{padding:1.6rem;display:grid;grid-template-columns:minmax(0,1fr);gap:1.2rem;align-items:center;margin-bottom:1rem;background:linear-gradient(135deg,color-mix(in srgb,var(--gold) 13%,var(--glass)),var(--glass) 55%)}
-.hero h1{font-size:clamp(2.2rem,6vw,3.8rem)}
-.hero h1 #heroHi{background:linear-gradient(100deg,var(--tx) 25%,var(--gold) 50%,var(--tx) 75%);background-size:220% 100%;-webkit-background-clip:text;background-clip:text;color:transparent;animation:shine 6s linear infinite}
-.hero h1 .w{display:inline-block;transform-origin:70% 70%;animation:wave 2.4s 1s ease-in-out infinite}
-.hero p{color:var(--mu);margin:.5rem 0 1rem;max-width:46ch}
-.hero .go{display:flex;gap:.7rem;flex-wrap:wrap;align-items:center}
-.langpill{display:inline-flex;align-items:center;gap:.5rem;border:1px solid var(--line2);border-radius:99px;padding:.3rem .9rem .3rem .7rem;font-weight:900;font-size:.9rem;background:var(--glass2)}
-.langpill .emo{width:1.4rem;height:1.4rem}
-.pring{position:relative;width:9.5rem;height:9.5rem}
-.pring svg{width:100%;height:100%;transform:rotate(90deg) scaleX(-1)}
-.pring circle{fill:none;stroke-width:9;stroke-linecap:round}
-.pring .t{stroke:var(--line2)}
-.pring .v{stroke:url(#pg);stroke-dasharray:276.5;stroke-dashoffset:276.5;transition:stroke-dashoffset 1s cubic-bezier(.2,.8,.2,1)}
-.pring b{position:absolute;inset:0;display:grid;place-items:center;font-family:ThmanyahSerif;font-size:2rem;align-content:center;line-height:1}
-.pring b small{display:block;font-family:Thmanyah;font-weight:400;font-size:.72rem;color:var(--mu);text-align:center}
-@media(max-width:640px){.hero{grid-template-columns:1fr}.pring{justify-self:start;width:7.5rem;height:7.5rem}}
-.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(11rem,1fr));gap:.8rem;margin-bottom:1rem}
-.stat{padding:1rem 1.1rem;display:grid;gap:.1rem;transform-style:preserve-3d}
-.stat .k{color:var(--mu);font-size:.82rem;font-weight:900;display:flex;align-items:center;gap:.4rem}
-.stat .n{font-family:ThmanyahSerif;font-weight:900;font-size:2.1rem;line-height:1.1}
-.stat .n small{font-size:.9rem;color:var(--mu);font-family:Thmanyah;font-weight:400;margin-inline-start:.3rem}
-.sec-h{display:flex;justify-content:space-between;align-items:end;gap:1rem;margin:1.6rem 0 .3rem}
-.sec-h h3{font-size:1.4rem}
-.sec-h span{color:var(--mu);font-size:.85rem}
+  .row{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+  @media(max-width:560px){.row{grid-template-columns:1fr}}
 
-/* الحلقة ثلاثية الأبعاد */
-.ring-stage{perspective:1500px;height:19rem;position:relative;overflow:hidden;touch-action:pan-y;cursor:grab;-webkit-mask-image:linear-gradient(90deg,transparent,#000 12%,#000 88%,transparent);mask-image:linear-gradient(90deg,transparent,#000 12%,#000 88%,transparent)}
-.ring-stage.drag{cursor:grabbing}
-.ring{position:absolute;top:1.6rem;left:50%;width:13rem;height:15.5rem;margin-left:-6.5rem;transform-style:preserve-3d;will-change:transform}
-.rcard{position:absolute;inset:0;border-radius:22px;border:1px solid var(--line2);background:linear-gradient(160deg,var(--glass),color-mix(in srgb,var(--sf2) 80%,transparent));backdrop-filter:blur(6px);padding:1.1rem;display:grid;align-content:space-between;color:var(--tx);text-decoration:none;box-shadow:0 18px 40px rgba(0,0,0,.25);cursor:pointer;text-align:start;font:inherit}
-.rcard .lg{width:3.6rem;height:3.6rem;border-radius:18px;display:grid;place-items:center;font-family:ThmanyahSerif;font-weight:900;font-size:1.7rem;background:linear-gradient(135deg,var(--gold),var(--gold2));color:var(--onpri);box-shadow:0 8px 20px color-mix(in srgb,var(--gold) 35%,transparent)}
-.rcard.sub .lg{background:linear-gradient(135deg,var(--mint),#9be8cf)}
-.rcard h4{margin:0;font-family:ThmanyahSerif;font-weight:900;font-size:1.3rem;direction:ltr;text-align:start}
-.rcard .tp{color:var(--mu);font-size:.82rem}
-.rcard .stt{display:inline-flex;align-items:center;gap:.4rem;font-size:.8rem;font-weight:900;color:var(--mu)}
-.rcard .stt i{width:.6rem;height:.6rem;border-radius:50%;background:var(--line2)}
-.rcard.on .stt{color:var(--mint)}.rcard.on .stt i{background:var(--mint);box-shadow:0 0 0 4px color-mix(in srgb,var(--mint) 25%,transparent)}
-.rcard.front{border-color:var(--gold)}
-.caption{display:flex;align-items:center;justify-content:center;gap:1rem;margin-top:.3rem}
-.nb{width:2.6rem;height:2.6rem;border-radius:50%;border:1px solid var(--line2);background:var(--glass);cursor:pointer;display:grid;place-items:center;transition:.2s}
-.nb:hover{border-color:var(--gold);transform:scale(1.1)}
-.nb svg{width:1.1rem;height:1.1rem;stroke:currentColor;fill:none;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round}
-.cap-t{text-align:center;min-width:13rem}
-.cap-t b{display:block;font-family:ThmanyahSerif;font-size:1.2rem;direction:ltr}
-.cap-t span{color:var(--mu);font-size:.85rem}
-@media(max-width:560px){.ring-stage{height:17.5rem}.ring{width:11rem;height:14rem;margin-left:-5.5rem}}
+  .btn{
+    display:inline-flex;align-items:center;justify-content:center;gap:8px;
+    padding:12px 22px;border-radius:10px;border:none;cursor:pointer;
+    font-weight:700;font-size:.92rem;font-family:inherit;
+    transition:.15s;text-decoration:none;white-space:nowrap;
+  }
+  .btn.primary{background:var(--white);color:var(--black)}
+  .btn.primary:hover{background:#e5e5e5;transform:translateY(-1px)}
+  .btn.ghost{background:transparent;border:1px solid var(--border2);color:var(--white)}
+  .btn.ghost:hover{border-color:var(--white);background:rgba(255,255,255,.04)}
+  .btn[disabled]{opacity:.4;cursor:not-allowed;transform:none!important}
 
-/* شريط متحرك + خطوات */
-.marq{overflow:hidden;margin:1.2rem 0;border-block:1px solid var(--line);padding:.7rem 0;-webkit-mask-image:linear-gradient(90deg,transparent,#000 10%,#000 90%,transparent);mask-image:linear-gradient(90deg,transparent,#000 10%,#000 90%,transparent)}
-.marq div{display:flex;gap:2.2rem;width:max-content;animation:mq 32s linear infinite}
-.marq span{font-weight:900;color:var(--mu);white-space:nowrap}.marq span b{color:var(--gold)}
-@keyframes mq{to{transform:translateX(50%)}}
-.steps{display:grid;grid-template-columns:repeat(auto-fit,minmax(13rem,1fr));gap:.8rem}
-.step{padding:1.1rem;display:grid;gap:.3rem}
-.step .no{font-family:ThmanyahSerif;font-weight:900;font-size:2.4rem;line-height:1;color:var(--gold);opacity:.9}
-.step h4{margin:0;font-family:ThmanyahSerif;font-size:1.1rem}
-.step p{margin:0;color:var(--mu);font-size:.88rem}
+  .actions{display:flex;gap:10px;flex-wrap:wrap}
 
-/* المطوّر */
-.dev{padding:1.4rem;display:flex;align-items:center;gap:1.4rem;margin-bottom:1rem;background:linear-gradient(135deg,color-mix(in srgb,var(--mint) 10%,var(--glass)),var(--glass) 60%)}
-.avatar{position:relative;width:8rem;height:8rem;flex:none;border-radius:50%;padding:4px;background:conic-gradient(from 0deg,var(--gold),var(--mint),var(--gold2),var(--gold));animation:spin 8s linear infinite}
-.avatar img,.avatar .fb{position:absolute;inset:4px;width:calc(100% - 8px);height:calc(100% - 8px);border-radius:50%;object-fit:cover;background:var(--bg);animation:spin 8s linear infinite reverse}
-.avatar .fb{display:grid;place-items:center;font-family:ThmanyahSerif;font-weight:900;font-size:3rem;color:var(--gold)}
-.avatar img{z-index:1}
-@keyframes spin{to{transform:rotate(360deg)}}
-.dv-t h4{margin:.2rem 0;font-family:ThmanyahSerif;font-weight:900;font-size:2.4rem;line-height:1.1;direction:ltr;text-align:start}
-.dv-t p{margin:0;color:var(--mu);max-width:44ch}
-.dv-r{display:inline-block;border:1px solid var(--line2);border-radius:99px;padding:.1rem .8rem;font-size:.82rem;font-weight:900;color:var(--gold);background:var(--glass2)}
-@media(max-width:520px){.dev{flex-direction:column;text-align:center}.dv-t h4{text-align:center}}
-.credit{display:flex;align-items:center;justify-content:center;gap:.6rem;color:var(--mu);font-size:.9rem;padding:0 1rem 7rem;margin-top:-5.5rem}
-.credit img{width:1.75rem;height:1.75rem;border-radius:50%;object-fit:cover}
-.credit b{color:var(--tx);direction:ltr;display:inline-block}
-.nav button .ic .emo{width:1.3rem;height:1.3rem}
-.sp-wave .emo{width:.75em;height:.75em}
-/* تذييل اللوحة */
-.pf{display:flex;justify-content:space-between;gap:.8rem;margin-top:.4rem}
+  #result{display:none;margin-top:18px;padding-top:18px;border-top:1px solid var(--border)}
+  #result.on{display:block}
+  .link-box{
+    background:var(--bg);border:1px solid var(--border2);border-radius:10px;
+    padding:12px 14px;display:flex;gap:10px;align-items:center;
+  }
+  .link-box input{
+    flex:1;border:none;background:transparent;color:var(--white);
+    font-family:ui-monospace,Consolas,monospace;font-size:.78rem;padding:0;
+    direction:ltr;text-align:left;
+  }
+  .link-box input:focus{outline:none}
+  .copy-btn{
+    padding:6px 12px;background:var(--white);color:var(--black);
+    border:none;border-radius:6px;font-size:.75rem;font-weight:700;
+    cursor:pointer;transition:.15s;
+  }
+  .copy-btn:hover{background:#e5e5e5}
 
-/* شريط التثبيت السفلي */
-.dock{position:fixed;inset-inline:0;bottom:calc(.9rem + env(safe-area-inset-bottom));margin:auto;width:min(34rem,calc(100% - 1.6rem));z-index:40;display:flex;align-items:center;gap:1rem;padding:.55rem .6rem .55rem 1rem;border-radius:999px;background:var(--glass);border:1px solid var(--line2);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);box-shadow:0 14px 50px rgba(0,0,0,.4)}
-.dock .dk{flex:1;min-width:0;display:grid;gap:.25rem}
-.dock .dk b{font-size:.88rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.toast{position:fixed;inset-inline:0;bottom:calc(5.6rem + env(safe-area-inset-bottom));margin:auto;width:max-content;max-width:90vw;background:var(--tx);color:var(--bg);padding:.55rem 1.2rem;border-radius:999px;font-weight:900;opacity:0;transform:translateY(12px);transition:.25s;pointer-events:none;z-index:60}
-.toast.on{opacity:1;transform:none}
-@media(prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;transition:none!important}html{scroll-behavior:auto}}
+  .toast{
+    position:fixed;bottom:24px;left:50%;
+    transform:translateX(-50%) translateY(20px);
+    background:var(--white);color:var(--black);
+    padding:10px 22px;border-radius:99px;
+    font-weight:700;font-size:.85rem;
+    opacity:0;transition:.25s;pointer-events:none;z-index:100;
+  }
+  .toast.on{opacity:1;transform:translateX(-50%) translateY(0)}
+
+  footer{
+    text-align:center;color:var(--muted);
+    font-size:.78rem;margin-top:40px;
+    padding-top:24px;border-top:1px solid var(--border);
+  }
+  footer a{color:var(--text);text-decoration:none}
+  footer a:hover{text-decoration:underline}
 </style>
 </head>
 <body>
-<div class="bgfx" aria-hidden="true"><i></i><i></i><i></i></div>
+<div class="wrap">
 
-<!-- شاشة الترحيب -->
-<div class="splash" id="splash" role="dialog" aria-label="مرحباً">
- <div class="sp-in">
-  <img class="emo sp-star" data-e="star" data-f="⭐" alt="">
-  <h1 class="sp-h">مرحبا ألف <span class="sp-wave"><img class="emo" data-e="wave" data-f="👋" alt=""></span></h1>
-  <p class="sp-p">أهلاً بك في أنسب، خلنا نجهّز لك الأنسب</p>
-  <div class="sp-bar"><i></i></div>
-  <button class="btn pri lg sp-btn" id="spGo" type="button">ادخل</button>
- </div>
-</div>
+<header>
+  <h1>Stremify<span class="dot">.</span></h1>
+  <p class="sub">Multi-source Stremio addon · Detect embedded subtitles by preferred language</p>
+</header>
 
-<div class="toast" id="toast" role="status"></div>
+<section class="card">
+  <h2><span class="num">1</span>Stream Sources</h2>
+  <p class="hint">Configure each addon on its own site, then paste the manifest URL below.</p>
 
-<header class="top"><div class="in">
- <div class="brand"><span>أنسب</span><img class="emo" data-e="star" data-f="⭐" alt=""><small>v3</small></div>
- <div class="seg" role="group" aria-label="المظهر">
-  <button type="button" data-th="light" aria-pressed="false"><img class="emo" data-e="light" data-f="☀️" alt=""><span>فاتح</span></button>
-  <button type="button" data-th="dark" aria-pressed="false"><img class="emo" data-e="dark" data-f="🌙" alt=""><span>داكن</span></button>
-  <button type="button" data-th="system" aria-pressed="true"><img class="emo" data-e="sys" data-f="💻" alt=""><span>النظام</span></button>
- </div>
-</div></header>
+  <div class="addon-list">
+    <div class="addon">
+      <div class="top">
+        <div><div class="name">Torrentio</div><div class="desc">Torrent stream provider</div></div>
+        <a class="link" href="https://torrentio.strem.fun/configure" target="_blank" rel="noopener">Configure</a>
+      </div>
+      <input type="text" id="torrentioUrl" placeholder="https://torrentio.strem.fun/.../manifest.json">
+    </div>
 
-<div class="shell">
-<aside class="side">
- <div class="glass me" data-spot>
-  <div class="hi"><img class="emo" data-e="star" data-f="⭐" alt=""><span id="meHi">مرحبا ألف</span></div>
-  <p id="meSub">اضبط الإعدادات وخلّ ستريمو يختار لك.</p>
- </div>
- <nav class="glass nav" id="nav" aria-label="الأقسام">
-  <button type="button" data-go="home"><span class="ic"><img class="emo" data-e="home" data-f="🏠" alt=""></span>الرئيسية<span class="ck">✓</span></button>
-  <button type="button" data-go="device"><span class="ic"><img class="emo" data-e="cfg" data-f="🎛️" alt=""></span>اللغة والجهاز<span class="ck">✓</span></button>
-  <button type="button" data-go="mode"><span class="ic"><img class="emo" data-e="run" data-f="⚡" alt=""></span>طريقة التشغيل<span class="ck">✓</span></button>
-  <button type="button" data-go="sources"><span class="ic"><img class="emo" data-e="src" data-f="🎬" alt=""></span>مصادر النسخ<span class="ck">✓</span></button>
-  <button type="button" data-go="subs"><span class="ic"><img class="emo" data-e="sub" data-f="💬" alt=""></span>مصادر الترجمة<span class="ck">✓</span></button>
-  <button type="button" data-go="match"><span class="ic"><img class="emo" data-e="mat" data-f="🎯" alt=""></span>دقة التطابق<span class="ck">✓</span></button>
-  <button type="button" data-go="install"><span class="ic"><img class="emo" data-e="ins" data-f="🚀" alt=""></span>التثبيت<span class="ck">✓</span></button>
- </nav>
-</aside>
+    <div class="addon">
+      <div class="top">
+        <div><div class="name">Comet</div><div class="desc">Debrid + torrent streams</div></div>
+        <a class="link" href="https://comet.elfhosted.com/configure" target="_blank" rel="noopener">Configure</a>
+      </div>
+      <input type="text" id="cometUrl" placeholder="https://comet.elfhosted.com/.../manifest.json">
+    </div>
 
-<main class="stage">
+    <div class="addon">
+      <div class="top">
+        <div><div class="name">StremThru</div><div class="desc">Multi-provider torrent streams</div></div>
+        <a class="link" href="https://stremthru.13377001.xyz/stremio/torz/configure" target="_blank" rel="noopener">Configure</a>
+      </div>
+      <input type="text" id="stremthruUrl" placeholder="https://stremthru.13377001.xyz/.../manifest.json">
+    </div>
 
-<!-- ===== الرئيسية ===== -->
-<section class="panel" id="p-home" data-t="الرئيسية">
- <div class="glass hero rv" data-spot data-tilt>
-  <div>
-   <h1><span id="heroHi">مرحبا ألف</span> <span class="w"><img class="emo" data-e="wave" data-f="👋" alt=""></span></h1>
-   <p id="heroSub">أنسب يختار لك أنسب نسخة ويربطها بأنسب ترجمة. اضبطها مرة وحدة وانسَ الموضوع.</p>
-   <div class="go"><button class="btn pri lg" type="button" id="startBtn">ابدأ الإعداد</button><span class="langpill"><img class="emo" data-e="flag" data-f="🇸🇦" alt="">الترجمة بالعربية</span></div>
+    <div class="addon">
+      <div class="top">
+        <div><div class="name">MediaFusion</div><div class="desc">Streams with subtitle metadata</div></div>
+        <a class="link" href="https://mediafusion.elfhosted.com/app/configure" target="_blank" rel="noopener">Configure</a>
+      </div>
+      <input type="text" id="mediafusionUrl" placeholder="https://mediafusion.elfhosted.com/.../manifest.json">
+    </div>
   </div>
- </div>
 
- <div class="sec-h rv"><h3>المطوّرون</h3><span>الشخص اللي بنى أنسب</span></div>
- <div class="glass dev rv" data-spot data-tilt>
-  <div class="avatar"><span class="fb">M</span><img id="devImg" src="https://avatars.githubusercontent.com/u/351209198?v=4" alt="Miller" width="128" height="128" referrerpolicy="no-referrer"></div>
-  <div class="dv-t"><span class="dv-r">مطوّر أنسب</span><h4>Miller</h4><p>صمّم أنسب وبرمجه، من مطابقة النسخ والترجمات إلى هذه اللوحة.</p></div>
- </div>
-
- <div class="sec-h rv"><h3>كيف يشتغل أنسب</h3></div>
- <div class="steps rv">
-  <div class="glass step" data-spot data-tilt><span class="no">١</span><h4>يجمع</h4><p>النسخ من Torrentio وComet وStremThru وMediaFusion والترجمات من SubDL وSubSource وOpenSubtitles.</p></div>
-  <div class="glass step" data-spot data-tilt><span class="no">٢</span><h4>يطابق</h4><p>اسم النسخة والمنصة، بصمة التوقيت، إجماع الترجمات، ومدة الفيلم. ويفحص محتوى الترجمة نفسها: لغة وترميز.</p></div>
-  <div class="glass step" data-spot data-tilt><span class="no">٣</span><h4>يربط ويصحّح</h4><p>يرفق أفضل ترجمة بالنسخة، ويصحّح الإزاحة وفرق الـ fps وانحراف السرعة قبل التسليم.</p></div>
- </div>
-</section>
-
-<!-- ===== اللغة والجهاز ===== -->
-<section class="panel" id="p-device" data-t="اللغة والجهاز">
- <header class="ph rv"><span class="pn">١</span><div><h2>اللغة والجهاز</h2><p>الترجمة بالعربية، وأنسب يختار الجودة اللي يتحملها جهازك.</p></div></header>
- <div class="glass card rv" data-spot>
-  <div class="lbl">لغة الترجمة</div>
-  <div class="langf"><img class="emo" data-e="flag" data-f="🇸🇦" alt=""><select id="lang" aria-label="لغة الترجمة"><option value="ar">العربية</option></select></div>
-  <p class="note">اللغة المدعومة هي العربية فقط.</p>
-  <div class="lbl">جهازك</div>
-  <select id="dev" class="chsel"><option value="auto">أي جهاز — بدون حد</option><option value="4k">شاشة 4K — تدعم HDR</option><option value="4knohdr">شاشة 4K — بدون HDR</option><option value="1080">1080p — شاشة أو كمبيوتر</option><option value="720">720p — جهاز قديم أو جوال</option></select>
-  <div class="choices" data-for="dev" role="radiogroup" aria-label="جهازك"></div>
-  <label class="check"><input type="checkbox" id="atmos"> أفضّل Dolby Atmos</label>
- </div>
- <div class="pf rv" data-pf></div>
-</section>
-
-<!-- ===== طريقة التشغيل ===== -->
-<section class="panel" id="p-mode" data-t="طريقة التشغيل">
- <header class="ph rv"><span class="pn">٢</span><div><h2>طريقة التشغيل</h2><p>تورنت مباشر، أو ديبرد أسرع وأثبت.</p></div></header>
- <div class="glass card rv" data-spot>
-  <div class="lbl">اختر</div>
-  <select id="mode" class="chsel"><option value="p2p">P2P — تورنت مباشر، بدون اشتراك</option><option value="debrid">Debrid — أسرع وأثبت، يحتاج اشتراك</option></select>
-  <div class="choices" data-for="mode" role="radiogroup" aria-label="طريقة التشغيل"></div>
-  <div id="dbox" hidden>
-   <div class="lbl">خدمة الديبرد</div>
-   <select id="svc" class="chsel"></select>
-   <div class="choices" data-for="svc" role="radiogroup" aria-label="خدمة الديبرد"></div>
-   <label for="dkey">مفتاح API</label><input id="dkey" type="password" autocomplete="off">
-   <p class="note" id="dhelp"></p>
-   <label class="check"><input type="checkbox" id="cachedOnly"> النسخ الجاهزة فقط (تشتغل فوراً)</label>
+  <div class="custom-block">
+    <label for="customSources">Additional custom sources</label>
+    <textarea id="customSources" placeholder="MyAddon|https://example.com/manifest.json"></textarea>
+    <p class="hint" style="margin-top:8px;margin-bottom:0">One per line: <code style="color:#fff">Name|URL</code></p>
   </div>
-  <p class="tip">مفتاح الديبرد يُضبط تلقائياً في Torrentio. أما Comet وStremThru فاضبط الديبرد داخل صفحة إعدادهما ثم الصق الرابط.</p>
- </div>
- <div class="pf rv" data-pf></div>
 </section>
 
-<!-- ===== مصادر النسخ ===== -->
-<section class="panel" id="p-sources" data-t="مصادر النسخ">
- <header class="ph rv"><span class="pn">٣</span><div><h2>مصادر النسخ</h2><p>افتح صفحة الإعداد، انسخ رابط manifest والصقه، وأنسب يتحقق منه فوراً.</p></div></header>
- <div class="glass card rv" data-spot>
-  <div class="src"><div class="top2"><div class="nm"><i>T</i>Torrentio</div><a class="btn sm" href="https://torrentio.strem.fun/configure" target="_blank" rel="noopener">افتح الإعداد ↗</a></div>
-  <label class="check"><input type="checkbox" id="useTorrentio"> مفعّل (يُضبط تلقائياً بمفتاح الديبرد)</label>
-  <input id="torrentioUrl" type="url" placeholder="اختياري: رابط Torrentio المخصص (فلاتر ومزودات)" aria-label="رابط Torrentio المخصص">
-  <div class="st" id="st-torrentioUrl"></div></div>
+<section class="card">
+  <h2><span class="num">2</span>Preferred Subtitle Language</h2>
+  <p class="hint">We check if this language is embedded or hardcoded in each release. If not, we attach an external subtitle automatically.</p>
 
-  <div class="src"><div class="top2"><div class="nm"><i>C</i>Comet</div><a class="btn sm" href="https://comet.elfhosted.com/configure" target="_blank" rel="noopener">افتح الإعداد ↗</a></div>
-  <input id="comet" type="url" placeholder="الصق رابط manifest.json من Comet" aria-label="رابط Comet" style="margin-top:.6rem">
-  <div class="st" id="st-comet"></div></div>
-
-  <div class="src"><div class="top2"><div class="nm"><i>S</i>StremThru</div><a class="btn sm" href="https://stremthru.13377001.xyz/stremio/torz/configure" target="_blank" rel="noopener">افتح الإعداد ↗</a></div>
-  <input id="torz" type="url" placeholder="الصق رابط manifest.json من StremThru" aria-label="رابط StremThru" style="margin-top:.6rem">
-  <div class="st" id="st-torz"></div></div>
-
-  <div class="src"><div class="top2"><div class="nm"><i>M</i>MediaFusion</div><a class="btn sm" href="https://mediafusion.elfhosted.com/app/configure" target="_blank" rel="noopener">افتح الإعداد ↗</a></div>
-  <input id="mediafusion" type="url" placeholder="الصق رابط manifest.json من MediaFusion" aria-label="رابط MediaFusion" style="margin-top:.6rem">
-  <div class="st" id="st-mediafusion"></div>
-  <p class="note">اضبط الديبرد والفلاتر في صفحة MediaFusion ثم انسخ رابط التثبيت (Manifest) والصقه هنا.</p></div>
-
-  <details><summary>إضافات نسخ أخرى</summary>
-  <label for="addons">اسم|رابط — كل سطر إضافة</label><textarea id="addons" placeholder="MediaFusion|https://..."></textarea></details>
- </div>
- <div class="pf rv" data-pf></div>
+  <div class="dd" id="langDD" data-value="en">
+    <button type="button" class="dd-btn" aria-haspopup="listbox" aria-expanded="false">
+      <img class="dd-ico" alt="">
+      <span class="label">English</span>
+    </button>
+    <div class="dd-menu" role="listbox">
+      <div class="dd-item" data-value="en" data-icon="https://dima.tools/emoji_to_png/i/i229YjpsEZ9_256.png"><img src="https://dima.tools/emoji_to_png/i/i229YjpsEZ9_256.png" alt=""><span>English</span></div>
+      <div class="dd-item" data-value="ar" data-icon="https://dima.tools/emoji_to_png/i/g3FN4NDKC8C_256.png"><img src="https://dima.tools/emoji_to_png/i/g3FN4NDKC8C_256.png" alt=""><span>Arabic</span></div>
+      <div class="dd-item" data-value="de" data-icon="https://dima.tools/emoji_to_png/i/Kcq2keEebw6_256.png"><img src="https://dima.tools/emoji_to_png/i/Kcq2keEebw6_256.png" alt=""><span>German</span></div>
+      <div class="dd-item" data-value="fr" data-icon="https://dima.tools/emoji_to_png/i/hboBSWFAj54_256.png"><img src="https://dima.tools/emoji_to_png/i/hboBSWFAj54_256.png" alt=""><span>French</span></div>
+      <div class="dd-item" data-value="es" data-icon="https://dima.tools/emoji_to_png/i/VJH3pmHTaVE_256.png"><img src="https://dima.tools/emoji_to_png/i/VJH3pmHTaVE_256.png" alt=""><span>Spanish</span></div>
+      <div class="dd-item" data-value="tr" data-icon="https://dima.tools/emoji_to_png/i/6c2FqVF2Ah6_256.png"><img src="https://dima.tools/emoji_to_png/i/6c2FqVF2Ah6_256.png" alt=""><span>Turkish</span></div>
+      <div class="dd-item" data-value="hi" data-icon="https://dima.tools/emoji_to_png/i/ZHrHz5uLTgb_256.png"><img src="https://dima.tools/emoji_to_png/i/ZHrHz5uLTgb_256.png" alt=""><span>Hindi</span></div>
+      <div class="dd-item" data-value="ja" data-icon="https://dima.tools/emoji_to_png/i/oBH8LYWVCk4_256.png"><img src="https://dima.tools/emoji_to_png/i/oBH8LYWVCk4_256.png" alt=""><span>Japanese</span></div>
+    </div>
+  </div>
 </section>
 
-<!-- ===== مصادر الترجمة ===== -->
-<section class="panel" id="p-subs" data-t="مصادر الترجمة">
- <header class="ph rv"><span class="pn">٤</span><div><h2>مصادر الترجمة</h2><p>كل مفتاح تضيفه يرفع فرصة إيجاد ترجمة مطابقة.</p></div></header>
- <div class="glass card rv" data-spot>
-  <label class="check"><input type="checkbox" id="osv3"> OpenSubtitles v3 (بدون مفتاح)</label>
+<section class="card">
+  <h2><span class="num">3</span>Debrid Service <span style="color:var(--muted);font-weight:400;font-size:.8rem">(optional)</span></h2>
+  <p class="hint">Add an API key to speed up streaming. Injected into Torrentio automatically.</p>
 
-  <div class="src"><div class="top2"><div class="nm"><i>H</i>OpenSubtitles Homes</div><span class="note">عربي جاهز بدون مفتاح، ضبط التوقيت تلقائي</span></div>
-  <label class="check"><input type="checkbox" id="osh"> مفعّل</label>
-  <input id="oshUrl" type="url" aria-label="رابط OpenSubtitles Homes" style="margin-top:.6rem">
-  <div class="st" id="st-oshUrl"></div></div>
-
-  <div class="src"><div class="top2"><div class="nm"><i>D</i>SubDL</div><a class="btn sm" href="https://subdl.com/panel/api" target="_blank" rel="noopener">احصل على المفتاح ↗</a></div>
-  <div class="keyrow"><input id="kSubdl" type="password" autocomplete="off" placeholder="SubDL API key" aria-label="مفتاح SubDL"><button class="btn sm" type="button" data-test="subdl">اختبار</button></div>
-  <div class="st" id="st-subdl"></div></div>
-
-  <div class="src"><div class="top2"><div class="nm"><i>S</i>SubSource</div><a class="btn sm" href="https://subsource.net" target="_blank" rel="noopener">احصل على المفتاح ↗</a></div>
-  <div class="keyrow"><input id="kSubsource" type="password" autocomplete="off" placeholder="SubSource API key (الملف الشخصي ← API Key)" aria-label="مفتاح SubSource"><button class="btn sm" type="button" data-test="subsource">اختبار</button></div>
-  <div class="st" id="st-subsource"></div></div>
-
-  <div class="src"><div class="top2"><div class="nm"><i>O</i>OpenSubtitles.com</div><a class="btn sm" href="https://www.opensubtitles.com/en/consumers" target="_blank" rel="noopener">احصل على المفتاح ↗</a></div>
-  <div class="keyrow"><input id="kOs" type="password" autocomplete="off" placeholder="OpenSubtitles API key" aria-label="مفتاح OpenSubtitles"><button class="btn sm" type="button" data-test="os">اختبار</button></div>
-  <div class="row2"><div><label for="osUser">اسم المستخدم</label><input id="osUser" type="text" autocomplete="off"></div>
-  <div><label for="osPass">كلمة المرور</label><input id="osPass" type="password" autocomplete="off"></div></div>
-  <p class="note">اسم المستخدم وكلمة المرور مطلوبان لتنزيل الترجمات من OpenSubtitles.com (البحث وحده يكفيه المفتاح).</p>
-  <div class="st" id="st-os"></div></div>
-
-  <details><summary>مصادر ترجمة أخرى</summary>
-  <label for="subsExtra">اسم|رابط — كل سطر إضافة ترجمة ستريمو</label><textarea id="subsExtra"></textarea></details>
- </div>
- <div class="pf rv" data-pf></div>
+  <div class="row">
+    <div>
+      <label class="field-label">Service</label>
+      <div class="dd" id="debridDD" data-value="">
+        <button type="button" class="dd-btn" aria-haspopup="listbox" aria-expanded="false">
+          <img class="dd-ico" alt="" style="display:none">
+          <span class="label">No Debrid (P2P only)</span>
+        </button>
+        <div class="dd-menu" role="listbox">
+          <div class="dd-item" data-value="" data-icon=""><span>No Debrid (P2P only)</span></div>
+          <div class="dd-item" data-value="realdebrid" data-icon="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/real-debrid.png"><img src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/real-debrid.png" alt=""><span>Real-Debrid — RD+</span></div>
+          <div class="dd-item" data-value="alldebrid"  data-icon="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/alldebrid.png"><img src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/alldebrid.png" alt=""><span>AllDebrid — AD+</span></div>
+          <div class="dd-item" data-value="premiumize" data-icon="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/premiumize.png"><img src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/premiumize.png" alt=""><span>Premiumize — PM+</span></div>
+          <div class="dd-item" data-value="torbox"     data-icon="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/torbox.png"><img src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/torbox.png" alt=""><span>TorBox — TB+</span></div>
+          <div class="dd-item" data-value="debridlink" data-icon="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/debrid-link.png"><img src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/debrid-link.png" alt=""><span>Debrid-Link — DL+</span></div>
+        </div>
+      </div>
+    </div>
+    <div>
+      <label class="field-label" for="key">API Key</label>
+      <input id="key" type="password" placeholder="Paste your API key" autocomplete="off">
+    </div>
+  </div>
 </section>
 
-<!-- ===== دقة التطابق ===== -->
-<section class="panel" id="p-match" data-t="دقة التطابق">
- <header class="ph rv"><span class="pn">٥</span><div><h2>دقة التطابق</h2><p>اسم الملف، ثم توقيت الأسطر نفسه، ثم مدة الفيلم، كلها معاً.</p></div></header>
- <div class="glass card rv" data-spot>
-  <label class="check"><input type="checkbox" id="deep"> تحليل التوقيت العميق (ينزّل أفضل المرشحين ويقارن أزمنتهم)</label>
-  <label class="check"><input type="checkbox" id="fix"> مزامنة تلقائية: تصحيح فرق الـ fps أو الإزاحة عند اكتشافه</label>
-  <label class="check"><input type="checkbox" id="rtl"> إصلاح اتجاه النص العربي (الشرطات وعلامات الترقيم في أول السطر)</label>
-  <div class="lbl">أقل نسبة تطابق لربط الترجمة تلقائياً</div>
-  <select id="minPct" class="chsel"><option value="0">بدون حد — اربط أفضل ترجمة دائماً</option><option value="50">50% — متساهل</option><option value="70">70% — متوازن</option><option value="85">85% — صارم جداً</option></select>
-  <div class="choices" data-for="minPct" role="radiogroup" aria-label="أقل نسبة تطابق"></div>
-  <div class="hint"><b>⏱ متزامنة</b><span>أزمنة الترجمة تطابق ترجمة مرجعية للنسخة.</span><b>🔧 صُحّح</b><span>اكتشفنا فرق fps/إزاحة وصحّحناه قبل التسليم.</span><b>⏱ إجماع</b><span>توقيتها يوافق أغلب الترجمات المتاحة للعنوان.</span><b>⚠️ مختلف</b><span>قطعة أو منصة أخرى، تنزل نسبتها تلقائياً.</span><b>⚠️ مشكوك</b><span>لغة خاطئة أو ترميز تالف أو أسطر ناقصة، لا تُرفق أبداً.</span></div>
-  <p class="note">التحليل العميق لا يستهلك حصة تنزيل OpenSubtitles (يشمل SubDL وSubSource والإضافات). قد يضيف ثانية أو ثلاث لأول فتح عنوان، ثم يُخزَّن.</p>
- </div>
- <div class="pf rv" data-pf></div>
+<section class="card">
+  <h2><span class="num">4</span>Generate Link</h2>
+  <div class="actions">
+    <button class="btn primary" id="gen">Generate Link</button>
+    <button class="btn ghost" id="copy" disabled>Copy</button>
+    <a class="btn ghost" id="install" href="#" target="_blank" style="pointer-events:none;opacity:.4">Install in Stremio</a>
+  </div>
+  <div id="result">
+    <div class="link-box" style="margin-top:18px">
+      <input id="link" type="text" readonly placeholder="Your manifest URL will appear here...">
+      <button class="copy-btn" id="copy2">Copy</button>
+    </div>
+  </div>
 </section>
 
-<!-- ===== التثبيت ===== -->
-<section class="panel" id="p-install" data-t="التثبيت">
- <header class="ph rv"><span class="pn">٦</span><div><h2>التثبيت</h2><p>جاهز؟ ثبّت أنسب في ستريمو بضغطة وحدة.</p></div></header>
- <div class="glass card rv" data-spot>
-  <h3>كيف تظهر في ستريمو</h3>
-  <p class="sub">مثال على نتيجة واحدة:</p>
-  <div class="prev" aria-label="مثال"><div class="nm">Anseb - Torrentio
-4K</div><div class="ds" id="prevDs"></div></div>
-  <p class="tip">ليتفعّل ملف الترجمة تلقائياً: في ستريمو افتح الإعدادات ← المشغّل ← «لغة الترجمة» واختر العربية.</p>
- </div>
- <div class="glass card rv" data-spot>
-  <h3>رابط الإضافة</h3>
-  <input id="link" class="link" type="text" readonly placeholder="يتولّد الرابط هنا" aria-label="رابط الإضافة" style="margin-top:.6rem">
-  <div class="warn" id="warn" role="status"></div>
-  <div class="actions"><a class="btn pri" id="go" aria-disabled="true">تثبيت في Stremio</a><button class="btn" id="copy" type="button">نسخ الرابط</button><a class="btn" id="web" target="_blank" rel="noopener" aria-disabled="true">Stremio Web</a></div>
-  <p class="note">الرابط يحوي إعداداتك ومفاتيحك، فلا تشاركه. تُحفظ الإعدادات في متصفحك فقط.</p>
- </div>
- <div class="glass card rv" id="splitCard" data-spot hidden>
-  <h3>أو ثبّت كل مصدر لوحده</h3>
-  <p class="sub">تظهر في ستريمو كإضافات مستقلة، كل وحدة باسمها ونسخها. ثبّت هذه أو الرابط الواحد أعلاه، لا الاثنين معاً.</p>
-  <div id="splitList"></div>
- </div>
- <div class="pf rv" data-pf></div>
-</section>
+<footer>
+  Stremify · All processing happens in your browser · <a href="https://strem.io" target="_blank" rel="noopener">Stremio</a>
+</footer>
 
-</main>
 </div>
-<footer class="credit"><img class="mini-av" src="https://avatars.githubusercontent.com/u/351209198?v=4&s=64" alt="" width="28" height="28" referrerpolicy="no-referrer"><span>تطوير <b>Miller</b></span></footer>
-
-<!-- شريط التثبيت -->
-<div class="dock" id="dock">
- <div class="dk"><b id="dkTxt">أكمل الإعداد</b></div>
- <a class="btn pri" id="dockGo" href="#install" role="button">أكمل الإعداد</a>
-</div>
+<div class="toast" id="toast">Copied to clipboard</div>
 
 <script>
 (function(){
-var $=function(i){return document.getElementById(i)};
-var DEF={lang:'ar',dev:'auto',atmos:true,mode:'p2p',svc:'realdebrid',dkey:'',cachedOnly:true,useTorrentio:true,torrentioUrl:'',comet:'',torz:'',addons:'',osv3:true,osh:true,oshUrl:'https://opensubtitles.stremio.homes/ar/ai-translated=false%7Cfrom=all%7Cauto-adjustment=true',mediafusion:'',rtl:true,deep:true,fix:true,minPct:'0',kSubdl:'',kSubsource:'',kOs:'',osUser:'',osPass:'',subsExtra:''};
-var SVC=[['realdebrid','Real-Debrid','real-debrid.com/apitoken'],['alldebrid','AllDebrid','alldebrid.com/apikeys'],['premiumize','Premiumize','premiumize.me/account'],['torbox','TorBox','torbox.app/settings'],['debridlink','Debrid-Link','debrid-link.com/webapp/apikey']];
-var LN={ar:'Arabic'};
-var FIELDS=['lang','dev','mode','svc','dkey','torrentioUrl','comet','torz','mediafusion','oshUrl','addons','kSubdl','kSubsource','kOs','osUser','osPass','subsExtra','minPct'],CHECKS=['atmos','useTorrentio','cachedOnly','osv3','osh','rtl','deep','fix'],URLS=['torrentioUrl','comet','torz','mediafusion','oshUrl'];
-var S=load();
-function load(){var o;try{o=Object.assign({},DEF,JSON.parse(localStorage.getItem('anseb2')||'{}'))}catch(e){o=Object.assign({},DEF)}o.lang='ar';return o}
-function save(){try{localStorage.setItem('anseb2',JSON.stringify(S))}catch(e){}}
-function normUrl(u){u=String(u||'').trim().replace(/^stremio:\/\//i,'https://');if(u&&!/^https?:\/\//i.test(u)&&/^[\w.-]+\.[a-z]{2,}\//i.test(u))u='https://'+u;return u.replace(/\|/g,'%7C').replace(/\/(manifest\.json|configure)\/?$/i,'').replace(/\/$/,'')}
-function lines(s){return String(s||'').split('\n').map(function(x){return x.trim()}).filter(Boolean)}
-function maxRes(){return{auto:0,'4k':2160,'4knohdr':2160,'1080':1080,'720':720}[S.dev]||0}
-var reduced=matchMedia('(prefers-reduced-motion:reduce)').matches;
+  const $ = (id) => document.getElementById(id);
+  const toastEl = $('toast');
+  function toast(msg){
+    toastEl.textContent = msg || 'Copied';
+    toastEl.classList.add('on');
+    clearTimeout(toastEl._t);
+    toastEl._t = setTimeout(() => toastEl.classList.remove('on'), 1800);
+  }
 
-// ----- الإيموجي: رابطك أولاً، ثم نسخة محلية، ثم رمز نصي -----
-var EID={home:'KaNKZaKP8qE',cfg:'5a22euMM039',run:'OAQYVU0HiOD',src:'bUG1mfa2Zy6',sub:'KPV3W9nEEk4',mat:'C6JH2KtPPSB',ins:'hMwdRRBp7q8',wave:'amgIjSknPzD',star:'lzYAWqvmps9',flag:'g3FN4NDKC8C',sys:'jh4ImBcv184',dark:'i1VuoBXqPk8',light:'z6E7EQ0BvvJ'};
-function emo(root){(root||document).querySelectorAll('img[data-e]').forEach(function(im){
- if(im.dataset.ok)return;im.dataset.ok='1';var k=im.dataset.e,step=0;
- im.onerror=function(){step++;if(step===1){im.src='/emoji/'+k+'.png'}else{var s=document.createElement('span');s.className=im.className;s.textContent=im.dataset.f||'';s.style.fontSize='1.1em';s.style.lineHeight='1';if(im.parentNode)im.parentNode.replaceChild(s,im)}};
- im.src='https://dima.tools/emoji_to_png/i/'+EID[k]+'_256.png'})}
-emo();
+  function setupDD(ddEl){
+    const btn = ddEl.querySelector('.dd-btn');
+    const menu = ddEl.querySelector('.dd-menu');
+    const labelEl = btn.querySelector('.label');
+    const icoEl = btn.querySelector('.dd-ico');
+    const items = Array.from(menu.querySelectorAll('.dd-item'));
 
-// ----- بطاقات الاختيار فوق الـ select المخفي -----
-function buildChoices(){document.querySelectorAll('.choices').forEach(function(box){
- var sel=$(box.dataset.for);box.textContent='';
- Array.prototype.forEach.call(sel.options,function(o){
-  var parts=o.textContent.split(' — '),b=document.createElement('button');b.type='button';b.className='ch';b.setAttribute('role','radio');b.dataset.v=o.value;
-  var t=document.createElement('b');t.textContent=parts[0];b.appendChild(t);
-  if(parts[1]){var d=document.createElement('span');d.textContent=parts[1];b.appendChild(d)}
-  b.onclick=function(){sel.value=o.value;sel.dispatchEvent(new Event('input',{bubbles:true}));sel.dispatchEvent(new Event('change',{bubbles:true}));syncChoices()};
-  box.appendChild(b)})})}
-function syncChoices(){document.querySelectorAll('.choices').forEach(function(box){var v=$(box.dataset.for).value;Array.prototype.forEach.call(box.children,function(b){b.setAttribute('aria-checked',String(b.dataset.v===v))})})}
+    function apply(value){
+      const item = items.find((i) => i.dataset.value === value) || items[0];
+      if (!item) return;
+      ddEl.dataset.value = item.dataset.value;
+      labelEl.textContent = item.querySelector('span').textContent;
+      const icon = item.dataset.icon || '';
+      if (icon) {
+        icoEl.src = icon;
+        icoEl.style.display = '';
+      } else {
+        icoEl.removeAttribute('src');
+        icoEl.style.display = 'none';
+      }
+      items.forEach((i) => i.classList.toggle('on', i === item));
+    }
 
-// ----- واجهة -----
-$('svc').innerHTML=SVC.map(function(v){return '<option value="'+v[0]+'">'+v[1]+'</option>'}).join('');
-buildChoices();
-function dui(){$('dbox').hidden=$('mode').value!=='debrid';var x=SVC.filter(function(v){return v[0]===$('svc').value})[0];$('dhelp').textContent=x?'تلقى المفتاح في: '+x[2]:''}
-function fill(){FIELDS.forEach(function(k){$(k).value=S[k]});CHECKS.forEach(function(k){$(k).checked=!!S[k]});dui();syncChoices();prev()}
-function collect(){FIELDS.forEach(function(k){S[k]=$(k).value.trim()});URLS.forEach(function(k){S[k]=normUrl(S[k])});CHECKS.forEach(function(k){S[k]=$(k).checked});S.lang='ar';save()}
-function prev(){$('prevDs').textContent='🏆 Dune: Part Two (2024) · WEB-DL · HEVC · DV+HDR\n🔊 Audio: Dolby Atmos 7.1\n📺 4K: Yes ✅\n💬 Subtitle: Arabic · خارجية 94% ✅ · ⏱ متزامنة · SubDL\n💾 18.3 GB  👤 120  📡 Torrentio'}
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      document.querySelectorAll('.dd.open').forEach((d) => { if (d !== ddEl) d.classList.remove('open'); });
+      ddEl.classList.toggle('open');
+      btn.setAttribute('aria-expanded', ddEl.classList.contains('open') ? 'true' : 'false');
+    });
 
-// ----- تحقق من روابط المصادر ومفاتيح الترجمة -----
-function setSt(id,cls,txt){var e=$('st-'+id);e.className='st '+cls;e.textContent=txt}
-var chkT={};
-function chk(id){clearTimeout(chkT[id]);var v=normUrl($(id).value);if(!v){setSt(id,'','');return}
- setSt(id,'','جاري الفحص…');
- chkT[id]=setTimeout(function(){fetch('/api/check?url='+encodeURIComponent(v)+(id==='oshUrl'?'&kind=subs':'')).then(function(r){return r.json()}).then(function(d){
-  setSt(id,d.ok?'ok':'bad',d.ok?'✓ '+(d.name||'إضافة')+' '+(d.version||''):'✕ '+d.error)}).catch(function(){setSt(id,'bad','✕ تعذّر الفحص')})},400)}
-document.querySelectorAll('[data-test]').forEach(function(b){b.onclick=function(){
- collect();var k=b.dataset.test,body={kind:k,key:k==='subdl'?S.kSubdl:k==='subsource'?S.kSubsource:S.kOs,user:S.osUser,pass:S.osPass};
- if(!body.key){setSt(k,'bad','✕ أدخل المفتاح أولاً');return}
- setSt(k,'','جاري الاختبار…');
- fetch('/api/test',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)}).then(function(r){return r.json()}).then(function(d){setSt(k,d.ok?'ok':'bad',(d.ok?'✓ ':'✕ ')+d.msg)}).catch(function(){setSt(k,'bad','✕ تعذّر الاتصال بالخادم')})}});
+    items.forEach((it) => {
+      it.addEventListener('click', (e) => {
+        e.stopPropagation();
+        apply(it.dataset.value);
+        ddEl.classList.remove('open');
+        btn.setAttribute('aria-expanded', 'false');
+      });
+    });
 
-// ----- توليد رابط الإضافة -----
-function lists(){var a=[],s=[];
- if(S.useTorrentio)a.push('Torrentio|'+(S.torrentioUrl||'https://torrentio.strem.fun'));
- if(S.comet)a.push('Comet|'+S.comet);if(S.torz)a.push('StremThru|'+S.torz);if(S.mediafusion)a.push('MediaFusion|'+S.mediafusion);a=a.concat(lines(S.addons));
- s=lines(S.subsExtra);if(S.osh&&S.oshUrl)s.unshift('OpenSubtitles Homes|'+S.oshUrl);
- return{addons:a.join('\n'),names:a.map(lname),subs:s.join('\n')}}
-function lname(l){var i=l.indexOf('|');if(i>0&&!/^(https?|stremio):/i.test(l.slice(0,i)))return l.slice(0,i).trim();try{var h=new URL(normUrl(l)).hostname;return /stremthru/.test(h)?'StremThru':/comet/.test(h)?'Comet':/torrentio/.test(h)?'Torrentio':/mediafusion/.test(h)?'MediaFusion':h.split('.').slice(-2,-1)[0]}catch(e){return 'Source'}}
-function b64u(bytes){var s='';for(var i=0;i<bytes.length;i++)s+=String.fromCharCode(bytes[i]);return btoa(s).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'')}
-function ub64(s){s=s.replace(/-/g,'+').replace(/_/g,'/');while(s.length%4)s+='=';var b=atob(s),a=new Uint8Array(b.length);for(var i=0;i<b.length;i++)a[i]=b.charCodeAt(i);return a}
-async function enc(json){
- try{if(window.CompressionStream){var buf=await new Response(new Blob([json]).stream().pipeThrough(new CompressionStream('deflate-raw'))).arrayBuffer();return '~'+b64u(new Uint8Array(buf))}}catch(e){}
- return b64u(new TextEncoder().encode(json))}
-async function dec(t){
- try{var raw;if(t[0]==='~')raw=await new Response(new Blob([ub64(t.slice(1))]).stream().pipeThrough(new DecompressionStream('deflate-raw'))).text();else raw=new TextDecoder().decode(ub64(t));return JSON.parse(raw)}catch(e){return null}}
-function apply(c){
- S.lang='ar';S.rtl=c.rtl!==false;S.atmos=!!c.atmos;S.cachedOnly=c.cachedOnly!==false;S.osv3=c.osv3!==false;S.deep=c.deep!==false;S.fix=c.fix!==false;S.minPct=String(c.minPct||0);
- S.dev=c.noHdr?'4knohdr':({2160:'4k',1080:'1080',720:'720'}[c.maxRes]||'auto');
- S.mode=c.debrid?'debrid':'p2p';if(c.debrid)S.svc=c.debrid;S.dkey=c.debridKey||'';
- S.kSubdl=c.kSubdl||'';S.kSubsource=c.kSubsource||'';S.kOs=c.kOs||'';S.osUser=c.osUser||'';S.osPass=c.osPass||'';S.osh=false;var sx=[];lines(c.subs).forEach(function(l){var i=l.indexOf('|');if(i>0&&l.slice(0,i)==='OpenSubtitles Homes'){S.osh=true;S.oshUrl=normUrl(l.slice(i+1))}else sx.push(l)});S.subsExtra=sx.join('\n');
- S.useTorrentio=false;S.torrentioUrl='';S.comet='';S.torz='';S.mediafusion='';var extra=[];
- lines(c.addons).forEach(function(l){var i=l.indexOf('|'),n=i>0?l.slice(0,i):'',u=i>0?l.slice(i+1):l;
-  if(n==='Torrentio'){S.useTorrentio=true;if(normUrl(u)!=='https://torrentio.strem.fun')S.torrentioUrl=normUrl(u)}
-  else if(n==='Comet')S.comet=u;else if(n==='Torz'||n==='StremThru')S.torz=u;else if(n==='MediaFusion')S.mediafusion=normUrl(u);else extra.push(l)});
- S.addons=extra.join('\n')}
-var genT;
-function gen(){clearTimeout(genT);genT=setTimeout(doGen,250);status()}
-async function doGen(){
- collect();var L=lists(),go=$('go'),web=$('web'),w=$('warn');
- function off(msg){$('splitCard').hidden=true;$('link').value='';w.textContent=msg;go.setAttribute('aria-disabled','true');web.setAttribute('aria-disabled','true');go.removeAttribute('href');web.removeAttribute('href');status()}
- if(S.mode==='debrid'&&!S.dkey)return off('أدخل مفتاح API لخدمة الديبرد، أو اختر P2P.');
- if(!L.addons)return off('فعّل مصدر نسخ واحداً على الأقل.');
- w.textContent='';
- var c={v:2,lang:S.lang,atmos:S.atmos,maxRes:maxRes(),noHdr:S.dev==='4knohdr',addons:L.addons,subs:L.subs,osv3:S.osv3,rtl:S.rtl,kSubdl:S.kSubdl,kSubsource:S.kSubsource,kOs:S.kOs,osUser:S.osUser,osPass:S.osPass,debrid:S.mode==='debrid'?S.svc:'',debridKey:S.mode==='debrid'?S.dkey:'',cachedOnly:S.cachedOnly,deep:S.deep,fix:S.fix,minPct:+S.minPct||0};
- var tk=await enc(JSON.stringify(c)),u=location.origin+'/c/'+tk+'/manifest.json';
- $('link').value=u;go.href='stremio://'+u.replace(/^https?:\/\//,'');web.href='https://web.stremio.com/#/addons?addon='+encodeURIComponent(u);
- go.removeAttribute('aria-disabled');web.removeAttribute('aria-disabled');
- splitUI(L.names,location.origin+'/c/'+tk);status()}
-function splitUI(names,base){
- var box=$('splitList');box.textContent='';$('splitCard').hidden=false;
- names.map(function(n,i){return['Anseb - '+n,base+'/a/'+i+'/manifest.json']}).concat([['Anseb - Subtitles (اختياري)',base+'/subs/manifest.json']]).forEach(function(r){
-  var row=document.createElement('div');row.className='split';
-  var b=document.createElement('b');b.textContent=r[0];
-  var act=document.createElement('div');act.className='actions';act.style.marginTop='0';
-  var a=document.createElement('a');a.className='btn sm pri';a.textContent='تثبيت';a.href='stremio://'+r[1].replace(/^https?:\/\//,'');
-  var cp=document.createElement('button');cp.type='button';cp.className='btn sm';cp.textContent='نسخ';
-  cp.onclick=function(){(navigator.clipboard?navigator.clipboard.writeText(r[1]):Promise.reject()).then(function(){cp.textContent='تم ✓'}).catch(function(){cp.textContent='تعذّر'});setTimeout(function(){cp.textContent='نسخ'},1800)};
-  act.appendChild(a);act.appendChild(cp);row.appendChild(b);row.appendChild(act);box.appendChild(row)})}
-$('copy').onclick=function(){var v=$('link').value;if(!v)return;var b=$('copy');
- (navigator.clipboard?navigator.clipboard.writeText(v):Promise.reject()).then(function(){b.textContent='تم النسخ ✓';toast('تم نسخ الرابط ✓')}).catch(function(){$('link').select();document.execCommand&&document.execCommand('copy');b.textContent='تم'});
- setTimeout(function(){b.textContent='نسخ الرابط'},1800)};
+    apply(ddEl.dataset.value || (items[0] && items[0].dataset.value) || '');
+  }
 
-// ----- المظهر: فاتح / داكن / النظام -----
-var mq=matchMedia('(prefers-color-scheme:light)'),tt;
-function theme(m){try{localStorage.setItem('anseb-theme',m)}catch(e){}
- document.documentElement.dataset.theme=m==='system'?(mq.matches?'light':'dark'):m;
- document.querySelectorAll('[data-th]').forEach(function(b){b.setAttribute('aria-pressed',String(b.dataset.th===m))})}
-function curTheme(){try{return localStorage.getItem('anseb-theme')||'system'}catch(e){return 'system'}}
-document.querySelectorAll('[data-th]').forEach(function(b){b.onclick=function(){theme(b.dataset.th)}});
-(mq.addEventListener||mq.addListener).call(mq,'change',function(){if(curTheme()==='system')theme('system')});
-theme(curTheme());
-function toast(t){var e=$('toast');e.textContent=t;e.classList.add('on');clearTimeout(tt);tt=setTimeout(function(){e.classList.remove('on')},1800)}
+  document.querySelectorAll('.dd').forEach(setupDD);
 
-// ----- التحية -----
-function greet(){var h=new Date().getHours();return h>=5&&h<12?'صباح الخير':h>=12&&h<17?'طاب يومك':h>=17&&h<22?'مساء الخير':'سهرة موفقة'}
-$('meSub').textContent=greet()+'، اضبط الإعدادات وخلّ ستريمو يختار لك.';
-$('heroSub').textContent=greet()+'. أنسب يختار لك أنسب نسخة ويربطها بأنسب ترجمة، اضبطها مرة وحدة وانسَ الموضوع.';
+  document.addEventListener('click', () => {
+    document.querySelectorAll('.dd.open').forEach((d) => {
+      d.classList.remove('open');
+      const b = d.querySelector('.dd-btn');
+      if (b) b.setAttribute('aria-expanded', 'false');
+    });
+  });
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') {
+      document.querySelectorAll('.dd.open').forEach((d) => d.classList.remove('open'));
+    }
+  });
 
-// ----- الأقسام (داشبورد) -----
-var ORDER=['home','device','mode','sources','subs','match','install'],cur='home',DONE={};
-var TITLE={home:'الرئيسية',device:'اللغة والجهاز',mode:'طريقة التشغيل',sources:'مصادر النسخ',subs:'مصادر الترجمة',match:'دقة التطابق',install:'التثبيت'};
-document.querySelectorAll('.panel').forEach(function(p){var i=0;p.querySelectorAll('.rv').forEach(function(e){e.style.setProperty('--i',i++)})});
-document.querySelectorAll('[data-pf]').forEach(function(f){var id=f.parentNode.id.slice(2),ix=ORDER.indexOf(id);
- if(ix>0){var b=document.createElement('button');b.type='button';b.className='btn';b.textContent='→ '+TITLE[ORDER[ix-1]];b.onclick=function(){goTo(ORDER[ix-1])};f.appendChild(b)}else f.appendChild(document.createElement('span'));
- if(ix<ORDER.length-1){var n=document.createElement('button');n.type='button';n.className='btn pri';n.textContent=TITLE[ORDER[ix+1]]+' ←';n.onclick=function(){goTo(ORDER[ix+1])};f.appendChild(n)}});
-function goTo(id,quiet){if(ORDER.indexOf(id)<0)id='home';cur=id;
- document.querySelectorAll('.panel').forEach(function(p){p.classList.toggle('on',p.id==='p-'+id)});
- document.querySelectorAll('#nav button').forEach(function(b){if(b.dataset.go===id)b.setAttribute('aria-current','page');else b.removeAttribute('aria-current')});
- try{history.replaceState(null,'','#'+id)}catch(e){}
- document.title='أنسب — '+TITLE[id];
- if(!quiet){var top=document.querySelector('.stage').getBoundingClientRect().top+scrollY-(innerWidth>900?80:130);scrollTo({top:Math.max(0,top),behavior:reduced?'auto':'smooth'})}
- var cb=document.querySelector('#nav [aria-current]');if(cb&&cb.scrollIntoView&&innerWidth<=900)cb.scrollIntoView({inline:'center',block:'nearest'});
- if(id==='home')ringLayout()}
-document.querySelectorAll('#nav button').forEach(function(b){b.onclick=function(){goTo(b.dataset.go)}});
-function nextTodo(){for(var i=1;i<ORDER.length;i++){if(!DONE[ORDER[i]])return ORDER[i]}return 'install'}
-$('startBtn').onclick=function(){goTo(nextTodo())};
-$('dockGo').onclick=function(e){var g=$('go');if(g.getAttribute('href')&&!g.hasAttribute('aria-disabled')){e.preventDefault();location.href=g.getAttribute('href')}else{e.preventDefault();goTo(nextTodo())}};
+  function normUrl(u){
+    u = String(u || '').trim();
+    if (!u) return '';
+    return u.replace(/^stremio:\/\//i, 'https://')
+            .replace(/\/(manifest\.json|configure)\/?$/i, '')
+            .replace(/\/$/, '');
+  }
 
-// ----- الحالة والإحصاءات -----
-function nums(){return{src:(S.useTorrentio?1:0)+(S.comet?1:0)+(S.torz?1:0)+(S.mediafusion?1:0)+lines(S.addons).length,sub:(S.osv3?1:0)+(S.osh&&S.oshUrl?1:0)+(S.kSubdl?1:0)+(S.kSubsource?1:0)+(S.kOs?1:0)+lines(S.subsExtra).length}}
-var shown={};
-function count(el,to,suffix){var from=shown[el.id]||0;shown[el.id]=to;if(reduced||from===to){el.firstChild.nodeValue=to;return}
- var t0=performance.now();(function f(t){var k=Math.min(1,(t-t0)/700),e=1-Math.pow(1-k,3);el.firstChild.nodeValue=Math.round(from+(to-from)*e);if(k<1)requestAnimationFrame(f)})(t0)}
-function status(){
- var n=nums(),link=!!$('link').value;
- DONE={home:true,device:true,mode:S.mode==='p2p'||!!S.dkey,sources:n.src>0,subs:n.sub>0,match:true,install:link};
- var c=0;ORDER.forEach(function(k){if(k!=='home'&&DONE[k])c++});var T=ORDER.length-1;
- document.querySelectorAll('#nav button').forEach(function(b){b.classList.toggle('done',!!DONE[b.dataset.go])});
- var ready=link;$('dkTxt').textContent=ready?'جاهز للتثبيت ✓':'أكمل الإعداد';
- var d=$('dockGo');d.textContent=ready?'تثبيت في Stremio':'أكمل الإعداد';
- var g=$('go');if(ready&&g.getAttribute('href'))d.setAttribute('href',g.getAttribute('href'));else d.setAttribute('href','#install');
- ringState()}
+  function collect(){
+    const srcs = [];
+    const fields = [
+      { id: 'torrentioUrl',  name: 'Torrentio' },
+      { id: 'cometUrl',      name: 'Comet' },
+      { id: 'stremthruUrl',  name: 'StremThru' },
+      { id: 'mediafusionUrl',name: 'MediaFusion' },
+    ];
+    fields.forEach((f) => {
+      const url = normUrl($(f.id).value);
+      if (url) srcs.push({ name: f.name, url });
+    });
+    $('customSources').value.split('\n').map((l) => l.trim()).filter(Boolean).forEach((l) => {
+      const i = l.indexOf('|');
+      if (i < 0) return;
+      const name = l.slice(0, i).trim();
+      const url = normUrl(l.slice(i + 1));
+      if (name && url) srcs.push({ name, url });
+    });
+    return {
+      sources: srcs,
+      lang: $('langDD').dataset.value || 'en',
+      debrid: $('debridDD').dataset.value || '',
+      key: $('key').value.trim(),
+    };
+  }
 
-function ringState(){}function ringLayout(){}
-// ----- صورة المطوّر: إن تعذّر تحميلها نعرض الحرف -----
-var di=$('devImg');di.addEventListener('error',function(){di.style.display='none'});
-document.querySelectorAll('img.mini-av').forEach(function(i){i.addEventListener('error',function(){i.style.display='none'})});
+  function b64u(str){
+    const bytes = new TextEncoder().encode(str);
+    let bin = '';
+    bytes.forEach((b) => bin += String.fromCharCode(b));
+    return btoa(bin).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+  }
 
-// ----- تأثيرات: إضاءة المؤشر + ميلان -----
-document.addEventListener('pointermove',function(e){var g=e.target.closest&&e.target.closest('[data-spot]');if(!g)return;var r=g.getBoundingClientRect();g.style.setProperty('--mx',(e.clientX-r.left)+'px');g.style.setProperty('--my',(e.clientY-r.top)+'px');
- if(!reduced&&g.hasAttribute('data-tilt')&&e.pointerType==='mouse'){var x=(e.clientX-r.left)/r.width-.5,y=(e.clientY-r.top)/r.height-.5;g.style.transform='perspective(900px) rotateX('+(-y*5).toFixed(2)+'deg) rotateY('+(x*7).toFixed(2)+'deg) translateY(-2px)'}});
-document.addEventListener('pointerout',function(e){var g=e.target.closest&&e.target.closest('[data-tilt]');if(g&&!g.contains(e.relatedTarget))g.style.transform=''});
+  $('gen').addEventListener('click', () => {
+    const cfg = collect();
+    if (!cfg.sources.length) return alert('Add at least one source URL.');
 
-// ----- ربط الأحداث -----
-FIELDS.concat(CHECKS).forEach(function(k){var e=$(k);e.addEventListener('input',function(){gen()});e.addEventListener('change',function(){if(k==='mode'||k==='svc')dui();gen()})});
-URLS.forEach(function(k){$(k).addEventListener('input',function(){chk(k)})});
+    const token = b64u(JSON.stringify(cfg));
+    const origin = location.origin;
+    const link = origin + '/c/' + token + '/manifest.json';
 
-// ----- شاشة الترحيب -----
-var sp=$('splash'),spT;
-function closeSplash(){clearTimeout(spT);sp.classList.add('out');try{sessionStorage.setItem('anseb-welcomed','1')}catch(e){}setTimeout(function(){sp.hidden=true},800)}
-sp.onclick=closeSplash;$('spGo').onclick=closeSplash;
-addEventListener('keydown',function(e){if(!sp.hidden&&(e.key==='Enter'||e.key===' '||e.key==='Escape'))closeSplash()});
-var seen=false;try{seen=sessionStorage.getItem('anseb-welcomed')==='1'}catch(e){}
-if(seen)sp.hidden=true;else spT=setTimeout(closeSplash,reduced?900:3200);
+    $('link').value = link;
+    $('result').classList.add('on');
+    $('copy').disabled = false;
 
-// ----- البداية: إن فُتحت الصفحة من زر Configure داخل ستريمو نحمّل إعدادات الرابط -----
-(async function(){
- var m=location.pathname.match(/^\/c\/([\w~-]+)(?:\/a\/\d+|\/subs)?\/configure/);
- if(m){var c=await dec(m[1]);if(c){apply(c);save()}}
- fill();URLS.forEach(function(k){if($(k).value)chk(k)});
- ringLayout();status();
- goTo((location.hash||'').slice(1)||'home',true);
- await doGen();emo()})();
+    const install = $('install');
+    install.href = 'stremio://' + link.replace(/^https?:\/\//, '');
+    install.style.pointerEvents = '';
+    install.style.opacity = '1';
+
+    toast('Link generated');
+  });
+
+  function doCopy(){
+    const v = $('link').value;
+    if (!v) return;
+    (navigator.clipboard ? navigator.clipboard.writeText(v) : Promise.reject())
+      .then(() => toast('Copied to clipboard'))
+      .catch(() => { $('link').select(); document.execCommand && document.execCommand('copy'); toast('Copied'); });
+  }
+  $('copy').addEventListener('click', doCopy);
+  $('copy2').addEventListener('click', doCopy);
 })();
 </script>
 </body>
